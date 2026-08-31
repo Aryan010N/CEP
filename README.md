@@ -1,4 +1,4 @@
-# CEP_HOPEFULLY - AI Community Digital Problem Observatory 🛡️
+# CEP - AI Community Digital Problem Observatory 🛡️
 > **Community Engagement Project (CEP) Platform**  
 > Centralized, intelligent complaint tracking, automated Gemini AI categorization & deduplication, multi-community hierarchy customizer, photo evidence attachments, and NGO problem-solving marketplace.
 
