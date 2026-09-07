@@ -4,7 +4,7 @@ import re
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(encoding='utf-8')
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 

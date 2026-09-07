@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { 
   INITIAL_DEMO_TICKETS, 
   INITIAL_DEMO_COMMUNITIES, 
@@ -12,9 +13,11 @@ export function useCommunity() {
 }
 
 export function CommunityProvider({ children }) {
+  const { currentUser, isDemoMode } = useAuth();
+
   // Communities list state
   const [communities, setCommunities] = useState(() => {
-    const saved = localStorage.getItem('cep_communities_v2');
+    const saved = localStorage.getItem('cep_communities_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -26,13 +29,13 @@ export function CommunityProvider({ children }) {
   });
 
   const [activeCommunityId, setActiveCommunityId] = useState(() => {
-    const saved = localStorage.getItem('cep_active_community_id_v2');
+    const saved = localStorage.getItem('cep_active_community_id_v3');
     return saved || communities[0]?.community_id || 'comm_emerald_1';
   });
 
   // Tickets state
   const [tickets, setTickets] = useState(() => {
-    const saved = localStorage.getItem('cep_tickets_v2');
+    const saved = localStorage.getItem('cep_tickets_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -45,7 +48,7 @@ export function CommunityProvider({ children }) {
 
   // NGO Challenges state
   const [challenges, setChallenges] = useState(() => {
-    const saved = localStorage.getItem('cep_challenges_v2');
+    const saved = localStorage.getItem('cep_challenges_v3');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -61,19 +64,19 @@ export function CommunityProvider({ children }) {
 
   // Sync to LocalStorage
   useEffect(() => {
-    localStorage.setItem('cep_communities_v2', JSON.stringify(communities));
+    localStorage.setItem('cep_communities_v3', JSON.stringify(communities));
   }, [communities]);
 
   useEffect(() => {
-    localStorage.setItem('cep_active_community_id_v2', activeCommunityId);
+    localStorage.setItem('cep_active_community_id_v3', activeCommunityId);
   }, [activeCommunityId]);
 
   useEffect(() => {
-    localStorage.setItem('cep_tickets_v2', JSON.stringify(tickets));
+    localStorage.setItem('cep_tickets_v3', JSON.stringify(tickets));
   }, [tickets]);
 
   useEffect(() => {
-    localStorage.setItem('cep_challenges_v2', JSON.stringify(challenges));
+    localStorage.setItem('cep_challenges_v3', JSON.stringify(challenges));
   }, [challenges]);
 
   const showToast = (message, type = 'success') => {
@@ -81,6 +84,25 @@ export function CommunityProvider({ children }) {
     setTimeout(() => {
       setToast(null);
     }, 4000);
+  };
+
+  // --- Membership helpers ---
+  const DEMO_COMMUNITY_IDS = ['comm_emerald_1', 'comm_palmgrove_2', 'comm_greenwoods_3'];
+
+  // Get communities the current user is a member of
+  const getUserCommunities = () => {
+    if (!currentUser) return [];
+    return communities.filter(c => {
+      // In demo mode, show all demo communities
+      if (isDemoMode && DEMO_COMMUNITY_IDS.includes(c.community_id)) return true;
+      // User is a member
+      if (c.members && c.members.some(m => m.uid === currentUser.uid)) return true;
+      // User is the admin/creator
+      if (c.admin_uid === currentUser.uid) return true;
+      // Legacy: user's community_id matches
+      if (currentUser.community_id === c.community_id) return true;
+      return false;
+    });
   };
 
   const activeCommunity = communities.find(c => c.community_id === activeCommunityId) || communities[0] || INITIAL_DEMO_COMMUNITIES[0];
@@ -94,6 +116,67 @@ export function CommunityProvider({ children }) {
       authority_label: "Warden / Admin",
       division_label: "Wing"
     };
+  };
+
+  // Join an existing community
+  const joinCommunity = (communityId) => {
+    if (!currentUser) {
+      showToast("Please sign in to join a community.", "warning");
+      return false;
+    }
+    
+    const community = communities.find(c => c.community_id === communityId);
+    if (!community) {
+      showToast("Community not found. Check the invite link.", "error");
+      return false;
+    }
+
+    // Check if already a member
+    const isAlreadyMember = community.members?.some(m => m.uid === currentUser.uid) ||
+                            community.admin_uid === currentUser.uid ||
+                            currentUser.community_id === community.community_id;
+    
+    if (isAlreadyMember) {
+      setActiveCommunityId(communityId);
+      showToast(`You're already a member of "${community.name}". Switched to it!`, "info");
+      return true;
+    }
+
+    // Add member
+    setCommunities(prev => prev.map(c => {
+      if (c.community_id === communityId) {
+        return {
+          ...c,
+          members: [...(c.members || []), {
+            uid: currentUser.uid,
+            name: currentUser.name,
+            role: currentUser.role,
+            joinedAt: new Date().toISOString()
+          }]
+        };
+      }
+      return c;
+    }));
+
+    setActiveCommunityId(communityId);
+    showToast(`Successfully joined "${community.name}"! 🎉`, "success");
+    return true;
+  };
+
+  // Generate invite code for a community
+  const getInviteCode = (communityId = activeCommunityId) => {
+    return btoa(`cep_join_${communityId}_${Date.now()}`).replace(/=/g, '');
+  };
+
+  // Parse invite code back to community ID
+  const parseInviteCode = (code) => {
+    try {
+      const decoded = atob(code + '=='.slice(0, (4 - code.length % 4) % 4));
+      const match = decoded.match(/^cep_join_(comm_[a-zA-Z0-9_]+)_\d+$/);
+      return match ? match[1] : null;
+    } catch {
+      return null;
+    }
   };
 
   // Register / Add a Brand New Community
@@ -123,8 +206,14 @@ export function CommunityProvider({ children }) {
       type: type || "housing_society",
       city: city ? city.trim() : "City Center",
       wings: cleanedWings.length > 0 ? cleanedWings : ["Section 1", "Section 2", "Section 3"],
-      admin_uid: `admin_${Date.now()}`,
+      admin_uid: currentUser?.uid || `admin_${Date.now()}`,
       nomenclature: assignedNom,
+      members: currentUser ? [{
+        uid: currentUser.uid,
+        name: currentUser.name,
+        role: 'admin',
+        joinedAt: new Date().toISOString()
+      }] : [],
       created_at: new Date().toISOString()
     };
 
@@ -268,6 +357,10 @@ export function CommunityProvider({ children }) {
     activeCommunityId,
     setActiveCommunityId,
     getNomenclature,
+    getUserCommunities,
+    joinCommunity,
+    getInviteCode,
+    parseInviteCode,
     createCommunity,
     tickets,
     challenges,
