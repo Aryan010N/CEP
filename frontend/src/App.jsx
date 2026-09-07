@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CommunityProvider, useCommunity } from './context/CommunityContext';
 import Navbar from './components/Navbar';
@@ -16,17 +16,27 @@ import NGOMarketplace from './pages/NGOMarketplace';
 import TicketCard from './components/TicketCard';
 import { Layers, Search, Filter, Shield, Sparkles, Building2 } from 'lucide-react';
 
+// Map roles to their allowed tabs
+const ROLE_TABS = {
+  resident: ['resident_dashboard', 'community_feed', 'ngo_marketplace'],
+  wing_rep: ['rep_backlog', 'community_feed', 'ngo_marketplace'],
+  admin: ['admin_dashboard', 'admin_analytics', 'community_feed', 'ngo_marketplace'],
+  ngo: ['ngo_marketplace', 'community_feed'],
+};
+
+const DEFAULT_TAB = {
+  resident: 'resident_dashboard',
+  wing_rep: 'rep_backlog',
+  admin: 'admin_dashboard',
+  ngo: 'ngo_marketplace',
+};
+
 function AppContent() {
-  const { role, currentUser, isAuthenticated } = useAuth();
-  const { tickets, updateTicketByRep, updateTicketByAdmin, activeCommunity, getNomenclature } = useCommunity();
+  const { role, currentUser, isAuthenticated, isLoading } = useAuth();
+  const { tickets, updateTicketByRep, updateTicketByAdmin, activeCommunity, getNomenclature, joinCommunity } = useCommunity();
   const nom = getNomenclature();
   
-  const [currentTab, setCurrentTab] = useState(() => {
-    if (role === 'wing_rep') return 'rep_backlog';
-    if (role === 'admin') return 'admin_dashboard';
-    if (role === 'ngo') return 'ngo_marketplace';
-    return 'resident_dashboard';
-  });
+  const [currentTab, setCurrentTab] = useState(() => DEFAULT_TAB[role] || 'resident_dashboard');
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
@@ -34,13 +44,39 @@ function AppContent() {
   const [feedWingFilter, setFeedWingFilter] = useState('All');
   const [feedSearch, setFeedSearch] = useState('');
 
-  // Handle role change effect on active tab
-  React.useEffect(() => {
-    if (role === 'wing_rep') setCurrentTab('rep_backlog');
-    else if (role === 'admin') setCurrentTab('admin_dashboard');
-    else if (role === 'ngo') setCurrentTab('ngo_marketplace');
-    else setCurrentTab('resident_dashboard');
+  // Handle role change — reset to default tab for that role
+  useEffect(() => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.resident;
+    if (!allowed.includes(currentTab)) {
+      setCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard');
+    }
   }, [role]);
+
+  // Parse URL params for join flow on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const communityId = params.get('community');
+
+    if (action === 'join' && communityId) {
+      // Attempt to join community
+      setTimeout(() => {
+        joinCommunity(communityId);
+        // Clear URL params
+        window.history.replaceState({}, '', window.location.pathname);
+      }, 500);
+    }
+  }, []);
+
+  // Tab guard — enforce allowed tabs
+  const handleSetCurrentTab = (tabId) => {
+    const allowed = ROLE_TABS[role] || ROLE_TABS.resident;
+    if (allowed.includes(tabId)) {
+      setCurrentTab(tabId);
+    } else {
+      setCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard');
+    }
+  };
 
   // Feed Filter
   const communityTickets = tickets.filter(t => t.community_id === activeCommunity?.community_id);
@@ -59,14 +95,30 @@ function AppContent() {
   });
 
   const handleOpenNewComplaint = () => {
-    setCurrentTab('resident_dashboard');
-    setTimeout(() => {
-      const formEl = document.getElementById('new-complaint-section');
-      if (formEl) {
-        formEl.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
+    const allowed = ROLE_TABS[role] || ROLE_TABS.resident;
+    if (allowed.includes('resident_dashboard')) {
+      handleSetCurrentTab('resident_dashboard');
+      setTimeout(() => {
+        const formEl = document.getElementById('new-complaint-section');
+        if (formEl) {
+          formEl.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 p-0.5 animate-pulse">
+          <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+            <Shield className="w-6 h-6 text-indigo-400" />
+          </div>
+        </div>
+        <p className="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase">Initializing Secure Context...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-safe-bottom">
@@ -74,10 +126,10 @@ function AppContent() {
       <Navbar onOpenAuthModal={() => { setAuthMode('login'); setShowAuthModal(true); }} />
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-5">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-5">
         
         {/* Left Sidebar on Desktop */}
-        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
+        <Sidebar currentTab={currentTab} setCurrentTab={handleSetCurrentTab} />
 
         {/* Dynamic Center Main Area */}
         <main className="flex-1 min-w-0">
@@ -104,10 +156,10 @@ function AppContent() {
           {/* 5. Public Community Live Feed */}
           {currentTab === 'community_feed' && (
             <div className="space-y-4">
-              <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-100 flex items-center gap-1.5">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-1.5">
                       <Layers className="w-4 h-4 text-indigo-400" />
                       Public Problem Register ({feedTickets.length})
                     </h3>
@@ -144,7 +196,7 @@ function AppContent() {
               </div>
 
               {/* Feed Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {feedTickets.map(ticket => (
                   <TicketCard
                     key={ticket.ticket_id}
@@ -156,6 +208,13 @@ function AppContent() {
                     onAdminUpdate={(id, data) => updateTicketByAdmin(id, data)}
                   />
                 ))}
+                {feedTickets.length === 0 && (
+                  <div className="col-span-full glass-panel p-6 rounded-2xl text-center text-slate-400 space-y-1.5">
+                    <Layers className="w-6 h-6 text-indigo-400/60 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-300">No tickets in this community yet</p>
+                    <p className="text-[11px]">Be the first to report an issue!</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -165,7 +224,7 @@ function AppContent() {
       {/* Mobile-First Bottom Navigation Bar */}
       <BottomNav
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleSetCurrentTab}
         onOpenCommunityModal={() => setShowCommunityModal(true)}
         onOpenNewComplaint={handleOpenNewComplaint}
       />

@@ -1,18 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Modal from './Modal';
-import { QrCode, Download, Share2, Printer, Check, MapPin } from 'lucide-react';
+import { QrCode, Download, Share2, Printer, Check, MapPin, UserPlus, Copy, Link2 } from 'lucide-react';
 import { useCommunity } from '../context/CommunityContext';
 
+// Lightweight QR code matrix generator (pure JS, no dependencies)
+function generateQRMatrix(text) {
+  // Creates a simple visual QR-like pattern seeded by text content.
+  // For production, use a library. This is a deterministic visual representation.
+  const size = 25;
+  const matrix = Array.from({ length: size }, () => Array(size).fill(false));
+  
+  // Hash function for text
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit int
+  }
+  
+  // Position detection patterns (top-left, top-right, bottom-left)
+  const drawFinderPattern = (cx, cy) => {
+    for (let y = -3; y <= 3; y++) {
+      for (let x = -3; x <= 3; x++) {
+        const px = cx + x, py = cy + y;
+        if (px >= 0 && px < size && py >= 0 && py < size) {
+          const isOuter = Math.abs(x) === 3 || Math.abs(y) === 3;
+          const isInner = Math.abs(x) <= 1 && Math.abs(y) <= 1;
+          matrix[py][px] = isOuter || isInner;
+        }
+      }
+    }
+  };
+
+  drawFinderPattern(3, 3);
+  drawFinderPattern(size - 4, 3);
+  drawFinderPattern(3, size - 4);
+
+  // Fill data area with deterministic pattern from hash
+  let seed = Math.abs(hash);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      // Skip finder patterns
+      const inFinder = (x <= 7 && y <= 7) || (x >= size - 8 && y <= 7) || (x <= 7 && y >= size - 8);
+      if (inFinder) continue;
+      
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      matrix[y][x] = (seed % 3) === 0;
+    }
+  }
+
+  // Timing patterns
+  for (let i = 8; i < size - 8; i++) {
+    matrix[6][i] = i % 2 === 0;
+    matrix[i][6] = i % 2 === 0;
+  }
+
+  return matrix;
+}
+
+function QRCodeSVG({ text, size = 160, darkColor = '#0f172a', lightColor = '#ffffff' }) {
+  const matrix = useMemo(() => generateQRMatrix(text), [text]);
+  const cellSize = size / matrix.length;
+  
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="rounded-lg">
+      <rect width={size} height={size} fill={lightColor} />
+      {matrix.map((row, y) =>
+        row.map((cell, x) =>
+          cell ? (
+            <rect
+              key={`${x}-${y}`}
+              x={x * cellSize}
+              y={y * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill={darkColor}
+            />
+          ) : null
+        )
+      )}
+    </svg>
+  );
+}
+
 export default function QRCodeModal({ isOpen, onClose }) {
-  const { activeCommunity } = useCommunity();
-  const [selectedWing, setSelectedWing] = useState("Wing A");
+  const { activeCommunity, getInviteCode } = useCommunity();
+  const [activeTab, setActiveTab] = useState('invite'); // 'invite' | 'spot'
+  const [selectedWing, setSelectedWing] = useState(activeCommunity?.wings?.[0] || "Wing A");
   const [selectedLocation, setSelectedLocation] = useState("Elevator Lobby (Floor 1)");
   const [copied, setCopied] = useState(false);
+  const [copiedInvite, setCopiedInvite] = useState(false);
+  const posterRef = useRef(null);
 
-  const directUrl = `${window.location.origin}/?community=${activeCommunity?.community_id || 'comm_emerald_1'}&wing=${encodeURIComponent(selectedWing)}&location=${encodeURIComponent(selectedLocation)}`;
+  const inviteCode = useMemo(() => getInviteCode(activeCommunity?.community_id), [activeCommunity?.community_id]);
+  
+  const inviteUrl = `${window.location.origin}/?action=join&community=${activeCommunity?.community_id || 'comm_emerald_1'}`;
+  const spotUrl = `${window.location.origin}/?community=${activeCommunity?.community_id || 'comm_emerald_1'}&wing=${encodeURIComponent(selectedWing)}&location=${encodeURIComponent(selectedLocation)}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(directUrl);
+  const handleCopyInvite = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2000);
+  };
+
+  const handleCopySpot = () => {
+    navigator.clipboard.writeText(spotUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -21,109 +113,257 @@ export default function QRCodeModal({ isOpen, onClose }) {
     window.print();
   };
 
+  const handleDownloadPNG = () => {
+    // Create an off-screen canvas and render the QR + poster
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const w = 600, h = 800;
+    canvas.width = w;
+    canvas.height = h;
+    
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Header
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🛡️ Community Observatory', w / 2, 50);
+    
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillText(activeTab === 'invite' ? 'Scan to Join Community' : 'Scan to Report Problem', w / 2, 85);
+    
+    // QR code area
+    const qrUrl = activeTab === 'invite' ? inviteUrl : spotUrl;
+    const matrix = generateQRMatrix(qrUrl);
+    const qrSize = 300;
+    const cellSize = qrSize / matrix.length;
+    const qrX = (w - qrSize) / 2;
+    const qrY = 120;
+    
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(qrX - 20, qrY - 20, qrSize + 40, qrSize + 40);
+    
+    matrix.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell) {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(qrX + x * cellSize, qrY + y * cellSize, cellSize, cellSize);
+        }
+      });
+    });
+    
+    // Community info
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 20px system-ui, sans-serif';
+    ctx.fillText(activeCommunity?.name || 'Community', w / 2, qrY + qrSize + 60);
+    
+    if (activeTab === 'spot') {
+      ctx.font = '16px system-ui, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`${selectedWing} — ${selectedLocation}`, w / 2, qrY + qrSize + 90);
+    }
+    
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Scan with your phone camera', w / 2, h - 60);
+    ctx.fillText('Powered by AI Community Observatory', w / 2, h - 35);
+    
+    // Download
+    const link = document.createElement('a');
+    link.download = `qr-${activeTab}-${activeCommunity?.community_id || 'community'}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Community Adoption QR Code Generator" maxWidth="max-w-xl">
-      <div className="space-y-6">
-        <p className="text-xs text-slate-300">
-          Generate physical location-tagged QR codes to print and stick on hostel bulletin boards, elevator lobbies, and mess halls for instant 1-tap complaint logging.
-        </p>
-
-        {/* Configuration */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target Wing / Block</label>
-            <select
-              value={selectedWing}
-              onChange={(e) => setSelectedWing(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
-            >
-              {(activeCommunity?.wings || ["Wing A", "Wing B", "Wing C", "Wing D"]).map(w => (
-                <option key={w} value={w}>{w}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Physical Spot Name</label>
-            <input
-              type="text"
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(e.target.value)}
-              placeholder="e.g. 2nd Floor Water Cooler"
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        {/* Printable Poster Card */}
-        <div className="p-6 rounded-2xl bg-white text-slate-900 border-2 border-dashed border-indigo-300 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🛡️</span>
-            <h4 className="font-extrabold text-lg text-slate-900 tracking-tight">
-              Community Digital Problem Observatory
-            </h4>
-          </div>
-
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
-            {/* Visual SVG QR Code Representation */}
-            <svg viewBox="0 0 100 100" className="w-40 h-40 fill-slate-900">
-              <rect x="10" y="10" width="25" height="25" fill="#0f172a" rx="4" />
-              <rect x="15" y="15" width="15" height="15" fill="#ffffff" rx="2" />
-              <rect x="18" y="18" width="9" height="9" fill="#4f46e5" />
-              
-              <rect x="65" y="10" width="25" height="25" fill="#0f172a" rx="4" />
-              <rect x="70" y="15" width="15" height="15" fill="#ffffff" rx="2" />
-              <rect x="73" y="18" width="9" height="9" fill="#4f46e5" />
-              
-              <rect x="10" y="65" width="25" height="25" fill="#0f172a" rx="4" />
-              <rect x="15" y="70" width="15" height="15" fill="#ffffff" rx="2" />
-              <rect x="18" y="73" width="9" height="9" fill="#4f46e5" />
-
-              {/* Data matrix pattern */}
-              <circle cx="45" cy="20" r="3" fill="#0f172a" />
-              <circle cx="55" cy="25" r="3" fill="#0f172a" />
-              <circle cx="45" cy="35" r="3" fill="#0f172a" />
-              <circle cx="50" cy="50" r="4" fill="#4f46e5" />
-              <circle cx="25" cy="48" r="3" fill="#0f172a" />
-              <circle cx="75" cy="48" r="3" fill="#0f172a" />
-              <circle cx="45" cy="65" r="3" fill="#0f172a" />
-              <circle cx="55" cy="75" r="3" fill="#0f172a" />
-              <circle cx="75" cy="70" r="3" fill="#0f172a" />
-              <circle cx="85" cy="85" r="3" fill="#0f172a" />
-            </svg>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Scan with Phone Camera to Report Problem</p>
-            <p className="text-sm font-semibold text-slate-800 flex items-center justify-center gap-1.5">
-              <MapPin className="w-4 h-4 text-indigo-600" />
-              {activeCommunity?.name} — {selectedWing} ({selectedLocation})
-            </p>
-            <p className="text-[11px] text-slate-500">
-              Directly alerts your Wing Representative & starts AI resolution tracking.
-            </p>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+    <Modal isOpen={isOpen} onClose={onClose} title="QR Code Generator" maxWidth="max-w-xl">
+      <div className="space-y-5">
+        {/* Tab Toggle */}
+        <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
           <button
             type="button"
-            onClick={handleCopy}
-            className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-2"
+            onClick={() => setActiveTab('invite')}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'invite' ? 'bg-emerald-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+            }`}
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-            <span>{copied ? "Direct URL Copied!" : "Copy Portal Link"}</span>
+            <UserPlus className="w-3.5 h-3.5" />
+            Community Invite QR
           </button>
           <button
             type="button"
-            onClick={handlePrint}
-            className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2"
+            onClick={() => setActiveTab('spot')}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'spot' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'
+            }`}
           >
-            <Printer className="w-4 h-4" />
-            <span>Print Spot Poster</span>
+            <MapPin className="w-3.5 h-3.5" />
+            Complaint Spot QR
           </button>
         </div>
+
+        {/* --- TAB 1: Community Invite QR --- */}
+        {activeTab === 'invite' && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-300">
+              Share this QR code or link with members to let them join <strong>{activeCommunity?.name}</strong> instantly. Print and display on notice boards for easy onboarding.
+            </p>
+
+            {/* Printable Invite Poster */}
+            <div ref={posterRef} className="p-6 rounded-2xl bg-white text-slate-900 border-2 border-dashed border-emerald-300 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛡️</span>
+                <h4 className="font-extrabold text-lg text-slate-900 tracking-tight">
+                  Join Our Community
+                </h4>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
+                <QRCodeSVG text={inviteUrl} size={180} />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-emerald-700">{activeCommunity?.name}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+                  Scan to Join & Start Reporting Issues
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {activeCommunity?.city} • {activeCommunity?.wings?.length || 0} {activeCommunity?.nomenclature?.division_label || 'Wing'}s
+                </p>
+              </div>
+            </div>
+
+            {/* Invite Link Box */}
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-700 space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Direct Invite Link:</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-[11px] text-emerald-300 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800 truncate font-mono">
+                  {inviteUrl}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center gap-1 shrink-0"
+                >
+                  {copiedInvite ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedInvite ? 'Copied!' : 'Copy'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Controls */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handleDownloadPNG}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex-1 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Poster</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB 2: Complaint Spot QR (Original) --- */}
+        {activeTab === 'spot' && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-300">
+              Generate physical location-tagged QR codes to print and stick on hostel bulletin boards, elevator lobbies, and mess halls for instant 1-tap complaint logging.
+            </p>
+
+            {/* Configuration */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target Wing / Block</label>
+                <select
+                  value={selectedWing}
+                  onChange={(e) => setSelectedWing(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                >
+                  {(activeCommunity?.wings || ["Wing A", "Wing B", "Wing C", "Wing D"]).map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Physical Spot Name</label>
+                <input
+                  type="text"
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  placeholder="e.g. 2nd Floor Water Cooler"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            {/* Printable Poster Card */}
+            <div className="p-6 rounded-2xl bg-white text-slate-900 border-2 border-dashed border-indigo-300 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛡️</span>
+                <h4 className="font-extrabold text-lg text-slate-900 tracking-tight">
+                  Community Digital Problem Observatory
+                </h4>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
+                <QRCodeSVG text={spotUrl} size={160} />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Scan with Phone Camera to Report Problem</p>
+                <p className="text-sm font-semibold text-slate-800 flex items-center justify-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-indigo-600" />
+                  {activeCommunity?.name} — {selectedWing} ({selectedLocation})
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Directly alerts your Wing Representative & starts AI resolution tracking.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleCopySpot}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-2"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                <span>{copied ? "Direct URL Copied!" : "Copy Portal Link"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPNG}
+                className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Spot Poster</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   );

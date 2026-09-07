@@ -88,10 +88,10 @@ export default function TicketCard({
   };
 
   return (
-    <div className="glass-panel rounded-2xl border border-slate-800/80 p-5 sm:p-6 transition-all duration-200 hover:border-slate-700 hover:shadow-xl relative flex flex-col justify-between group">
+    <div className="glass-panel rounded-xl sm:rounded-2xl border border-slate-800/80 p-3.5 sm:p-5 transition-all duration-200 hover:border-slate-700 hover:shadow-xl relative flex flex-col justify-between group">
       <div>
         {/* Top Badges */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[11px] font-bold text-slate-400 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-800">
               #{ticket.ticket_id}
@@ -109,7 +109,7 @@ export default function TicketCard({
         </div>
 
         {/* Title and Description */}
-        <h4 className="text-base font-bold text-slate-100 group-hover:text-indigo-300 transition-colors leading-snug">
+        <h4 className="text-sm sm:text-base font-bold text-slate-100 group-hover:text-indigo-300 transition-colors leading-snug">
           {ticket.title}
         </h4>
         <p className="text-xs text-slate-300/90 mt-1.5 line-clamp-3 leading-relaxed">
@@ -118,7 +118,7 @@ export default function TicketCard({
 
         {/* Attached Photo Preview if Present */}
         {ticket.image_url && (
-          <div className="mt-3 relative rounded-xl overflow-hidden border border-slate-800 max-h-36 bg-slate-950 group/img">
+          <div className="mt-2 sm:mt-3 relative rounded-lg sm:rounded-xl overflow-hidden border border-slate-800 max-h-28 sm:max-h-36 bg-slate-950 group/img">
             <img 
               src={ticket.image_url} 
               alt="Attached problem evidence" 
@@ -152,7 +152,7 @@ export default function TicketCard({
         )}
 
         {/* Location & Metadata */}
-        <div className="mt-3.5 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-1.5 text-xs text-slate-400">
+        <div className="mt-2.5 sm:mt-3.5 pt-2 sm:pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-400">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span className="truncate font-medium text-slate-300">
@@ -191,7 +191,7 @@ export default function TicketCard({
       </div>
 
       {/* Action Footer depending on Role */}
-      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+      <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
         {/* Verifier Action Controls */}
         {currentRole === 'wing_rep' && ticket.status === 'Submitted' && (
           <div className="flex items-center gap-2 w-full">

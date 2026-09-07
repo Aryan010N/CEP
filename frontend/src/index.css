@@ -18,6 +18,18 @@
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Prevent mobile zoom on inputs */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  @media (min-width: 640px) {
+    input, select, textarea {
+      font-size: inherit !important;
+    }
   }
 }
 
@@ -78,7 +90,11 @@ button, [role="button"] {
 
 /* Safe area inset support for mobile screens */
 .pb-safe-bottom {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Subtle fade in keyframes */
@@ -95,4 +111,35 @@ button, [role="button"] {
 
 .animate-fade-in {
   animation: fadeInSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Glow effects */
+.shadow-glow-indigo {
+  box-shadow: 0 0 20px -4px rgba(99, 102, 241, 0.35);
+}
+
+/* Mobile-first grid fix — ensure cards don't overflow */
+@media (max-width: 374px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-cols-3 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Print styles for QR posters */
+@media print {
+  body {
+    background: white !important;
+    color: #0f172a !important;
+  }
+  header, aside, nav, .lg\\:hidden, .fixed {
+    display: none !important;
+  }
+  .glass-panel {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    backdrop-filter: none !important;
+  }
 }

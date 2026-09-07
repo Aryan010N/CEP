@@ -11,7 +11,8 @@ import {
   Building2, 
   AlertCircle,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 
 export default function Sidebar({ currentTab, setCurrentTab }) {
@@ -32,6 +33,7 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
 
   const openChallengesCount = challenges.filter(c => c.status === 'Open').length;
 
+  // Strict role-based navigation — each role sees ONLY their allowed tabs
   const navItemsByRole = {
     resident: [
       { id: 'resident_dashboard', label: `${nom.reporter_label} Portal`, icon: Home },
@@ -58,8 +60,8 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
   const items = navItemsByRole[role] || navItemsByRole.resident;
 
   return (
-    <aside className="hidden lg:block w-60 shrink-0">
-      <div className="glass-panel rounded-2xl border border-slate-800/80 p-4 sticky top-20 space-y-5">
+    <aside className="hidden lg:block w-56 xl:w-60 shrink-0">
+      <div className="glass-panel rounded-2xl border border-slate-800/80 p-3.5 sticky top-20 space-y-4">
         
         {/* Active Community Pill */}
         <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
@@ -72,7 +74,7 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
           </p>
           <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-800">
             <span>{nom.division_label}:</span>
-            <span className="font-semibold text-indigo-300 font-mono">
+            <span className="font-semibold text-indigo-300 font-mono truncate ml-1">
               {currentUser?.wing || "All"}
             </span>
           </div>
@@ -96,12 +98,12 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
                     : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.count !== undefined && item.count > 0 && (
-                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${
+                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full shrink-0 ml-1 ${
                     item.highlight 
                       ? 'bg-emerald-500 text-slate-950 font-extrabold animate-pulse' 
                       : 'bg-slate-800 text-slate-300'
