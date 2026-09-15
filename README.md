@@ -100,12 +100,16 @@ For assessment presentations and teacher grading, the top navigation bar feature
 
 ```
 c:/CEP/
+├── .agents/
+│   └── skills/
+│       └── sprint-2-firestore/   # Workspace skill auto-discovery
+│           └── SKILL.md
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # Navbar, Sidebar, TicketCard, StatusBadge, Modal, AIAnalysisModal, StatsCard, QRCodeModal
-│   │   ├── context/          # AuthContext.jsx, CommunityContext.jsx
-│   │   ├── pages/            # Login, Register, ResidentDashboard, WingRepDashboard, AdminDashboard, NGOMarketplace
-│   │   ├── services/         # firebase.js, api.js
+│   │   ├── components/           # Navbar, Sidebar, TicketCard, StatusBadge, Modal, AIAnalysisModal, StatsCard, QRCodeModal
+│   │   ├── context/              # AuthContext.jsx, CommunityContext.jsx
+│   │   ├── pages/                # Login, Register, ResidentDashboard, WingRepDashboard, AdminDashboard, NGOMarketplace
+│   │   ├── services/             # firebase.js (modular v10+), api.js
 │   │   ├── App.jsx
 │   │   ├── main.jsx
 │   │   └── index.css
@@ -114,14 +118,32 @@ c:/CEP/
 │   └── vite.config.js
 ├── backend/
 │   ├── app/
-│   │   ├── api/              # tickets.py (analyze, deduplicate), reports.py (AI executive summary)
-│   │   ├── models/           # Pydantic schemas
-│   │   ├── services/         # gemini_service.py (Gemini 1.5 Flash + fallback)
-│   │   └── main.py           # FastAPI entrypoint with CORS
+│   │   ├── api/                  # tickets.py (analyze, deduplicate), reports.py (AI executive summary)
+│   │   ├── models/               # Pydantic schemas
+│   │   ├── services/             # gemini_service.py (Gemini 1.5 Flash + fallback)
+│   │   └── main.py               # FastAPI entrypoint with CORS
 │   └── requirements.txt
-├── TEACHER_ASSESSMENT_GUIDE.md # Complete defense script, evaluation rubric, and next steps
+├── .mcp.json                     # MCP Toolchain configuration
+├── SKILL.md                      # Sprint 2 Firestore & Tooling Operational Playbook
+├── MASTER_PROJECT_ROADMAP.md     # Phase and Sprint breakdown with PR templates
+├── IMPLEMENTATION_FACTORS.md     # Technical factors, schemas, and architecture guide
+├── TEACHER_ASSESSMENT_GUIDE.md   # Complete defense script, evaluation rubric, and next steps
 └── README.md
 ```
+
+---
+
+## ⚡ Sprint 2: Cloud Firestore & Agent Tooling Framework
+
+During Sprint 2, the CEP data layer migrates from `localStorage` to **Google Cloud Firestore v10+** with real-time syncing. All operations strictly adhere to the operational directives in [`SKILL.md`](./SKILL.md).
+
+### Integrated Agent Toolchain (`.mcp.json`)
+- **Context7 MCP:** Enforces version-specific verification of `@firebase/firestore` v10+ modular APIs and React 18 Context API before writing any database queries or mutations, completely eliminating deprecated v8/compat syntax.
+- **DesignRevision & Anima MCP:** Extracts production-grade, accessible, mobile-first Tailwind CSS components matching our glassmorphism design system rather than writing generic markup.
+- **Google Stitch:** Gemini-powered engine converting structured text prompts and sketches directly into high-fidelity HTML/CSS screens.
+- **motion.dev:** Enforces physics-based spring transitions (`type: "spring", stiffness: 350, damping: 25`) with compositor-only properties (`transform`, `opacity`) under strict anti-slop guidelines.
+- **Manus:** Subagent delegation workflow for routine component boilerplate, mock data generators, and test skeletons under architect review gates.
+- **Playwright MCP:** Multi-session headless browser testing loop verifying that Firestore `onSnapshot` updates dynamically update the DOM across concurrent Resident and Admin sessions without page reload.
 
 ---
 

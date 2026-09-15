@@ -1,9 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { 
   INITIAL_DEMO_TICKETS, 
   INITIAL_DEMO_COMMUNITIES, 
-  INITIAL_DEMO_CHALLENGES 
+  INITIAL_DEMO_CHALLENGES,
+  subscribeTickets,
+  subscribeCommunities,
+  subscribeChallenges,
+  createTicketInFirestore,
+  updateTicketInFirestore,
+  createCommunityInFirestore,
+  joinCommunityInFirestore,
+  claimChallengeInFirestore,
+  postChallengeInFirestore,
+  isFirestoreConfigured
 } from '../services/firebase';
 
 const CommunityContext = createContext();
@@ -59,10 +69,10 @@ export function CommunityProvider({ children }) {
     return INITIAL_DEMO_CHALLENGES;
   });
 
-  // Toast state
   const [toast, setToast] = useState(null);
+  const [isLiveSyncActive, setIsLiveSyncActive] = useState(false);
 
-  // Sync to LocalStorage
+  // Backup cache in localStorage
   useEffect(() => {
     localStorage.setItem('cep_communities_v3', JSON.stringify(communities));
   }, [communities]);
@@ -86,20 +96,102 @@ export function CommunityProvider({ children }) {
     }, 4000);
   };
 
+  // ==========================================================================
+  // REAL-TIME CLOUD FIRESTORE SUBSCRIPTIONS (Strict Unsubscribe Enforcement)
+  // ==========================================================================
+
+  // 1. Subscribe to Communities collection
+  useEffect(() => {
+    if (!isFirestoreConfigured() && isDemoMode) {
+      return;
+    }
+
+    const unsubscribe = subscribeCommunities(
+      (liveCommunities) => {
+        if (liveCommunities && liveCommunities.length > 0) {
+          setCommunities(liveCommunities);
+          setIsLiveSyncActive(true);
+        }
+      },
+      (error) => {
+        console.info("Operating in local demo mode fallback for communities.", error?.message);
+      }
+    );
+
+    // STRICT LIFECYCLE RULE: Unsubscribe on unmount to prevent memory leaks
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [isDemoMode]);
+
+  // 2. Subscribe to Tickets for the active community
+  useEffect(() => {
+    if (!activeCommunityId) {
+      return;
+    }
+
+    if (!isFirestoreConfigured() && isDemoMode) {
+      return;
+    }
+
+    const unsubscribe = subscribeTickets(
+      activeCommunityId,
+      (liveTickets) => {
+        if (liveTickets && liveTickets.length > 0) {
+          setTickets(liveTickets);
+          setIsLiveSyncActive(true);
+        }
+      },
+      (error) => {
+        console.info("Operating in local demo mode fallback for tickets.", error?.message);
+      }
+    );
+
+    // STRICT LIFECYCLE RULE: Unsubscribe on unmount or when activeCommunityId changes
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [activeCommunityId, isDemoMode]);
+
+  // 3. Subscribe to NGO Challenges collection
+  useEffect(() => {
+    if (!isFirestoreConfigured() && isDemoMode) {
+      return;
+    }
+
+    const unsubscribe = subscribeChallenges(
+      (liveChallenges) => {
+        if (liveChallenges && liveChallenges.length > 0) {
+          setChallenges(liveChallenges);
+          setIsLiveSyncActive(true);
+        }
+      },
+      (error) => {
+        console.info("Operating in local demo mode fallback for challenges.", error?.message);
+      }
+    );
+
+    // STRICT LIFECYCLE RULE: Unsubscribe on unmount
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [isDemoMode]);
+
   // --- Membership helpers ---
   const DEMO_COMMUNITY_IDS = ['comm_emerald_1', 'comm_palmgrove_2', 'comm_greenwoods_3'];
 
-  // Get communities the current user is a member of
   const getUserCommunities = () => {
     if (!currentUser) return [];
     return communities.filter(c => {
-      // In demo mode, show all demo communities
       if (isDemoMode && DEMO_COMMUNITY_IDS.includes(c.community_id)) return true;
-      // User is a member
       if (c.members && c.members.some(m => m.uid === currentUser.uid)) return true;
-      // User is the admin/creator
       if (c.admin_uid === currentUser.uid) return true;
-      // Legacy: user's community_id matches
       if (currentUser.community_id === c.community_id) return true;
       return false;
     });
@@ -107,7 +199,6 @@ export function CommunityProvider({ children }) {
 
   const activeCommunity = communities.find(c => c.community_id === activeCommunityId) || communities[0] || INITIAL_DEMO_COMMUNITIES[0];
 
-  // Get dynamic custom role names for any community
   const getNomenclature = (communityId = activeCommunityId) => {
     const comm = communities.find(c => c.community_id === communityId) || activeCommunity;
     return comm?.nomenclature || {
@@ -119,7 +210,7 @@ export function CommunityProvider({ children }) {
   };
 
   // Join an existing community
-  const joinCommunity = (communityId) => {
+  const joinCommunity = async (communityId) => {
     if (!currentUser) {
       showToast("Please sign in to join a community.", "warning");
       return false;
@@ -131,7 +222,6 @@ export function CommunityProvider({ children }) {
       return false;
     }
 
-    // Check if already a member
     const isAlreadyMember = community.members?.some(m => m.uid === currentUser.uid) ||
                             community.admin_uid === currentUser.uid ||
                             currentUser.community_id === community.community_id;
@@ -142,17 +232,19 @@ export function CommunityProvider({ children }) {
       return true;
     }
 
-    // Add member
+    const newMember = {
+      uid: currentUser.uid,
+      name: currentUser.name,
+      role: currentUser.role,
+      joinedAt: new Date().toISOString()
+    };
+
+    // Optimistic Update
     setCommunities(prev => prev.map(c => {
       if (c.community_id === communityId) {
         return {
           ...c,
-          members: [...(c.members || []), {
-            uid: currentUser.uid,
-            name: currentUser.name,
-            role: currentUser.role,
-            joinedAt: new Date().toISOString()
-          }]
+          members: [...(c.members || []), newMember]
         };
       }
       return c;
@@ -160,15 +252,21 @@ export function CommunityProvider({ children }) {
 
     setActiveCommunityId(communityId);
     showToast(`Successfully joined "${community.name}"! 🎉`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await joinCommunityInFirestore(communityId, newMember);
+    } catch (err) {
+      console.warn("Firestore joinCommunity sync notice:", err.message);
+    }
+
     return true;
   };
 
-  // Generate invite code for a community
   const getInviteCode = (communityId = activeCommunityId) => {
     return btoa(`cep_join_${communityId}_${Date.now()}`).replace(/=/g, '');
   };
 
-  // Parse invite code back to community ID
   const parseInviteCode = (code) => {
     try {
       const decoded = atob(code + '=='.slice(0, (4 - code.length % 4) % 4));
@@ -180,7 +278,7 @@ export function CommunityProvider({ children }) {
   };
 
   // Register / Add a Brand New Community
-  const createCommunity = ({ name, type, city, wings, nomenclature }) => {
+  const createCommunity = async ({ name, type, city, wings, nomenclature }) => {
     const defaultNomByType = {
       hostel: { reporter_label: "Student", verifier_label: "Floor Captain", authority_label: "Chief Warden", division_label: "Wing" },
       housing_society: { reporter_label: "Flat Owner", verifier_label: "Floor Lead", authority_label: "Society Secretary", division_label: "Tower" },
@@ -217,14 +315,23 @@ export function CommunityProvider({ children }) {
       created_at: new Date().toISOString()
     };
 
+    // Optimistic Update
     setCommunities(prev => [newCommunity, ...prev]);
     setActiveCommunityId(newCommunity.community_id);
     showToast(`Community "${newCommunity.name}" created & set as active!`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await createCommunityInFirestore(newCommunity);
+    } catch (err) {
+      console.warn("Firestore createCommunity sync notice:", err.message);
+    }
+
     return newCommunity;
   };
 
-  // Submit a new ticket (with photo / image support)
-  const submitTicket = (ticketData) => {
+  // Submit a new ticket
+  const submitTicket = async (ticketData) => {
     const currentNom = getNomenclature(ticketData.community_id || activeCommunityId);
 
     const newTicket = {
@@ -234,8 +341,8 @@ export function CommunityProvider({ children }) {
       category: ticketData.category || "General",
       urgency: ticketData.urgency || "Low",
       status: "Submitted",
-      resident_id: ticketData.resident_id || "usr_resident_1",
-      resident_name: ticketData.resident_name || currentNom.reporter_label,
+      resident_id: ticketData.resident_id || (currentUser?.uid || "usr_resident_1"),
+      resident_name: ticketData.resident_name || (currentUser?.name || currentNom.reporter_label),
       community_id: ticketData.community_id || activeCommunityId,
       wing: ticketData.wing || (activeCommunity?.wings?.[0] || "Section 1"),
       room_number: ticketData.room_number || "Unit 101",
@@ -247,23 +354,34 @@ export function CommunityProvider({ children }) {
       suggested_action: ticketData.suggested_action || `Pending ${currentNom.verifier_label} review.`
     };
 
+    // Optimistic Update
     setTickets(prev => [newTicket, ...prev]);
     showToast(`Complaint #${newTicket.ticket_id} submitted & routed to ${currentNom.verifier_label}!`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await createTicketInFirestore(newTicket);
+    } catch (err) {
+      console.warn("Firestore submitTicket sync notice:", err.message);
+    }
+
     return newTicket;
   };
 
   // Verifier action: Verify & Escalate or Reject
-  const updateTicketByRep = (ticketId, isApproved, verifierName, notes = "") => {
+  const updateTicketByRep = async (ticketId, isApproved, verifierName, notes = "") => {
     const currentNom = getNomenclature();
+    const updateData = {
+      status: isApproved ? "Verified_By_Rep" : "Rejected",
+      verified_by: verifierName || currentNom.verifier_label,
+      rep_notes: notes,
+      verified_at: new Date().toISOString()
+    };
+
+    // Optimistic Update
     setTickets(prev => prev.map(t => {
       if (t.ticket_id === ticketId) {
-        return {
-          ...t,
-          status: isApproved ? "Verified_By_Rep" : "Rejected",
-          verified_by: verifierName || currentNom.verifier_label,
-          rep_notes: notes,
-          verified_at: new Date().toISOString()
-        };
+        return { ...t, ...updateData };
       }
       return t;
     }));
@@ -273,19 +391,31 @@ export function CommunityProvider({ children }) {
     } else {
       showToast(`Ticket #${ticketId} marked as spam / rejected.`, "warning");
     }
+
+    // Async Cloud Firestore Sync
+    try {
+      await updateTicketInFirestore(ticketId, updateData);
+    } catch (err) {
+      console.warn("Firestore updateTicketByRep sync notice:", err.message);
+    }
   };
 
   // Admin / Authority action: Assign worker, move status, complete resolution
-  const updateTicketByAdmin = (ticketId, { status, assigned_worker, admin_notes }) => {
+  const updateTicketByAdmin = async (ticketId, { status, assigned_worker, admin_notes }) => {
+    const updateData = {
+      status: status || undefined,
+      assigned_worker: assigned_worker !== undefined ? assigned_worker : undefined,
+      admin_notes: admin_notes !== undefined ? admin_notes : undefined,
+      updated_at: new Date().toISOString()
+    };
+
+    // Remove undefined
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    // Optimistic Update
     setTickets(prev => prev.map(t => {
       if (t.ticket_id === ticketId) {
-        return {
-          ...t,
-          status: status || t.status,
-          assigned_worker: assigned_worker !== undefined ? assigned_worker : t.assigned_worker,
-          admin_notes: admin_notes !== undefined ? admin_notes : t.admin_notes,
-          updated_at: new Date().toISOString()
-        };
+        return { ...t, ...updateData };
       }
       return t;
     }));
@@ -299,10 +429,18 @@ export function CommunityProvider({ children }) {
     };
 
     showToast(`Ticket #${ticketId} updated: ${statusLabels[status] || status}`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await updateTicketInFirestore(ticketId, updateData);
+    } catch (err) {
+      console.warn("Firestore updateTicketByAdmin sync notice:", err.message);
+    }
   };
 
   // Student claim NGO challenge
-  const claimNGOChallenge = (challengeId, studentUserId, studentName) => {
+  const claimNGOChallenge = async (challengeId, studentUserId, studentName) => {
+    // Optimistic Update
     setChallenges(prev => prev.map(c => {
       if (c.challenge_id === challengeId) {
         return {
@@ -317,10 +455,17 @@ export function CommunityProvider({ children }) {
     }));
 
     showToast(`Challenge claimed! Project coordinator notified.`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await claimChallengeInFirestore(challengeId, studentUserId, studentName);
+    } catch (err) {
+      console.warn("Firestore claimNGOChallenge sync notice:", err.message);
+    }
   };
 
   // Post new NGO challenge
-  const postNGOChallenge = (challengeData) => {
+  const postNGOChallenge = async (challengeData) => {
     const newChallenge = {
       challenge_id: `NGO-CH-${Math.floor(100 + Math.random() * 900)}`,
       ngo_name: challengeData.ngo_name,
@@ -337,8 +482,17 @@ export function CommunityProvider({ children }) {
       created_at: new Date().toISOString()
     };
 
+    // Optimistic Update
     setChallenges(prev => [newChallenge, ...prev]);
     showToast(`NGO Challenge "${newChallenge.title}" published!`, "success");
+
+    // Async Cloud Firestore Sync
+    try {
+      await postChallengeInFirestore(newChallenge);
+    } catch (err) {
+      console.warn("Firestore postNGOChallenge sync notice:", err.message);
+    }
+
     return newChallenge;
   };
 
@@ -371,7 +525,8 @@ export function CommunityProvider({ children }) {
     updateTicketByAdmin,
     claimNGOChallenge,
     postNGOChallenge,
-    resetToDemoDefaults
+    resetToDemoDefaults,
+    isLiveSyncActive
   };
 
   return (

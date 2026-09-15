@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "motion": {
+      "type": "http",
+      "url": "https://mcp.motion.dev"
+    },
+    "motion-plus": {
+      "type": "http",
+      "url": "https://mcp.motion.dev/plus"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/mcp-server"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-playwright"
+      ],
+      "env": {}
+    },
+    "designrevision": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@designrevision/mcp-server"
+      ],
+      "env": {}
+    },
+    "anima": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@animaapp/mcp-server"
+      ],
+      "env": {}
+    }
+  }
+}

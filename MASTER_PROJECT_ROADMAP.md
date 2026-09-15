@@ -45,28 +45,45 @@ git push -u origin sprint-1
 
 ## Phase 2: Database Migration (Cloud Firestore) - 🚧 CURRENT
 **Goal:** Move Communities, Tickets, and Challenges from `localStorage` to Cloud Firestore for cross-device, real-time syncing.
+**Authoritative Operational Playbook:** See [`SKILL.md`](./SKILL.md) (or `.agents/skills/sprint-2-firestore/SKILL.md`) for mandatory rules and tool integration protocols.
 
-### Sprint 2 Details & Implementation Steps
-1. Create Firestore utility functions for CRUD operations.
-2. Update `CommunityContext.jsx` to fetch active tickets and communities from Firestore instead of localStorage.
-3. Implement `onSnapshot` listeners so when an Admin updates a ticket, the Resident sees it immediately without refreshing.
-4. Write basic Firestore Security Rules (e.g., users can only read tickets in their community).
+### Sprint 2 Integrated Tooling Architecture
+During Sprint 2, all development follows strict operational boundaries enabled by our MCP ecosystem:
+- **Context7 MCP:** Enforce documentation pre-checks for Firebase v10+ modular SDK (`collection`, `doc`, `onSnapshot`, `serverTimestamp`) and React 18 Context API. Legacy v8/compat syntax is strictly banned.
+- **DesignRevision & Anima MCP:** Discover, inspect, and import production-grade, accessible, mobile-first Tailwind CSS components matching our glassmorphism design system rather than writing generic markup.
+- **Google Stitch:** Rapidly synthesize Gemini-powered mobile screens and drawer wireframes into semantic HTML/Tailwind templates.
+- **motion.dev:** Enforce physics-based micro-interactions (`type: "spring", stiffness: 350, damping: 25`) with compositor-only properties (`transform`, `opacity`), adhering to our anti-slop guidelines.
+- **Manus:** Subagent delegation protocol for routine component boilerplate, mock data generators, and test skeletons under architect review gates.
+- **Playwright MCP:** Drive multi-session headless browser instances (Resident vs Admin) to deterministically verify that `onSnapshot` updates reflect in the DOM dynamically without page reloads.
+
+### Sprint 2 Implementation & Verification Steps
+1. **Pre-Implementation Doc Check:** Query Context7 MCP for latest `@firebase/firestore` v10+ modular APIs and unsubscribe lifecycle rules.
+2. **Component & Token Alignment:** Use DesignRevision, Anima, and Google Stitch for mobile-first, accessible Tailwind components.
+3. **Spring Motion Integration:** Integrate `motion/react` with spring physics on interactive cards and status badges.
+4. **Firestore CRUD & Service Layer:** Create tree-shakeable utility functions in `frontend/src/services/firebase.js` using `serverTimestamp()`.
+5. **Context Sync & Memory Leak Prevention:** Update `CommunityContext.jsx` with `onSnapshot` subscribers that strictly return their unsubscribe cleanup handlers in `useEffect`.
+6. **Real-Time Testing Loop with Playwright MCP:**
+   - Context A (Resident) views initial ticket list.
+   - Context B (Estate Admin) updates ticket status to "In Progress".
+   - Playwright asserts Context A DOM dynamically updates to "In Progress" within 1500ms without page reload.
+7. **Security Rules Enforcement:** Write and validate Firestore rules requiring `request.auth != null` and restricting ticket updates to authorized community and wing roles.
 
 ### Sprint 2 Pull Request Details
-You are currently working on Sprint 2. Once your Firestore changes are complete and tested, use these details for your PR:
+You are currently working on Sprint 2. Once your Firestore changes are complete and verified via Playwright, use these details for your PR:
 
 **PR Title:** `feat(sprint-2): Cloud Firestore integration and real-time syncing`
 
 **PR Description Template:**
 ```markdown
 ## Overview
-This PR concludes Sprint 2 by moving the platform's data layer from `localStorage` to Firebase Cloud Firestore.
+This PR concludes Sprint 2 by moving the platform's data layer from `localStorage` to Firebase Cloud Firestore with verified real-time syncing.
 
 ## Key Changes
-- **Firestore Migration:** Communities, Tickets, and Challenges are now persisted in the cloud.
-- **Real-Time Updates:** Integrated `onSnapshot` listeners to instantly reflect ticket status changes to users.
-- **Data Model Overhaul:** Added proper Firestore document IDs to all state structures.
-- **Security:** Established initial Firestore security rules.
+- **Firestore Migration:** Communities, Tickets, and Challenges persisted in Cloud Firestore using modular Firebase v10+ SDK.
+- **Real-Time Updates:** Integrated `onSnapshot` listeners with proper unsubscribe cleanup hooks in `CommunityContext.jsx`.
+- **Mobile-First UI & Motion:** Glassmorphism UI tokens refined via DesignRevision/Anima with spring physics via `motion/react`.
+- **Playwright Verification:** Verified concurrent multi-session DOM reactivity without page reloads.
+- **Security:** Established initial Firestore security rules isolating community data.
 ```
 
 **Git Commands to push Sprint 2:**

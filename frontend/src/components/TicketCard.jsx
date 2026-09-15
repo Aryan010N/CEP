@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import StatusBadge from './StatusBadge';
 import { 
   Zap, 
@@ -10,17 +11,18 @@ import {
   Calendar, 
   ShieldCheck, 
   Sparkles, 
-  CheckCircle2, 
   XCircle,
-  Clock,
-  ArrowRight,
-  Send,
-  Image as ImageIcon,
-  Maximize2,
-  X
+  Maximize2
 } from 'lucide-react';
 import Modal from './Modal';
 import { useCommunity } from '../context/CommunityContext';
+
+export const springTransition = {
+  type: "spring",
+  stiffness: 350,
+  damping: 25,
+  mass: 0.8
+};
 
 export default function TicketCard({ 
   ticket, 
@@ -30,7 +32,7 @@ export default function TicketCard({
   onRepReject, 
   onAdminUpdate 
 }) {
-  const { getNomenclature, activeCommunity } = useCommunity();
+  const { getNomenclature } = useCommunity();
   const nom = getNomenclature(ticket.community_id);
 
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -88,7 +90,16 @@ export default function TicketCard({
   };
 
   return (
-    <div className="glass-panel rounded-xl sm:rounded-2xl border border-slate-800/80 p-3.5 sm:p-5 transition-all duration-200 hover:border-slate-700 hover:shadow-xl relative flex flex-col justify-between group">
+    <motion.div 
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={springTransition}
+      whileHover={{ scale: 1.015, y: -2 }}
+      whileTap={{ scale: 0.985 }}
+      className="glass-panel rounded-xl sm:rounded-2xl border border-slate-800/80 p-3.5 sm:p-5 transition-colors duration-200 hover:border-slate-700 hover:shadow-xl relative flex flex-col justify-between group"
+    >
       <div>
         {/* Top Badges */}
         <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3">
@@ -296,8 +307,8 @@ export default function TicketCard({
 
       {/* Verifier Rejection Modal */}
       {showRejectModal && (
-        <Modal
-          isOpen={showRejectModal}
+        <Modal 
+          isOpen={showRejectModal} 
           onClose={() => setShowRejectModal(false)}
           title={`Reject / Flag Ticket #${ticket.ticket_id}`}
         >
@@ -334,8 +345,8 @@ export default function TicketCard({
 
       {/* Full Size Image Preview Modal */}
       {showImageModal && ticket.image_url && (
-        <Modal
-          isOpen={showImageModal}
+        <Modal 
+          isOpen={showImageModal} 
           onClose={() => setShowImageModal(false)}
           title={`Photo Evidence: Ticket #${ticket.ticket_id}`}
           maxWidth="max-w-2xl"
@@ -360,6 +371,6 @@ export default function TicketCard({
           </div>
         </Modal>
       )}
-    </div>
+    </motion.div>
   );
 }
