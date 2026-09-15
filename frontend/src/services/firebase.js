@@ -1,6 +1,21 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDocs, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  onSnapshot, 
+  serverTimestamp 
+} from 'firebase/firestore';
 
 // Firebase configuration from Vite environment variables
 const firebaseConfig = {
@@ -9,13 +24,20 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ai-community-observatory",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-community-observatory.appspot.com",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef123456"
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef123456",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined
 };
 
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Check if real Firebase credentials have been configured
+export const isFirestoreConfigured = () => {
+  const key = import.meta.env.VITE_FIREBASE_API_KEY;
+  return Boolean(key && !key.includes("DummyKey"));
+};
 
 // Sample Image Presets for rapid testing & demos
 export const SAMPLE_COMPLAINT_IMAGES = {
@@ -198,7 +220,8 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: null,
     claimed_by_user_name: null,
     contact_email: "contact@ecogreen.ngo",
-    reward: "Certificate of Social Impact & ₹5,000 Project Grant"
+    reward: "Certificate of Social Impact & ₹5,000 Project Grant",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
   },
   {
     challenge_id: "NGO-CH-102",
@@ -210,7 +233,8 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: "usr_resident_1",
     claimed_by_user_name: "Aarav Sharma (Student)",
     contact_email: "tech@vidyajyoti.org",
-    reward: "Letter of Recommendation + Industry Mentorship"
+    reward: "Letter of Recommendation + Industry Mentorship",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
   },
   {
     challenge_id: "NGO-CH-103",
@@ -222,6 +246,238 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: null,
     claimed_by_user_name: null,
     contact_email: "alerts@jalrakshak.org",
-    reward: "Hardware Prototype Grant & Certificate"
+    reward: "Hardware Prototype Grant & Certificate",
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
   }
 ];
+
+// ============================================================================
+// CLOUD FIRESTORE MODULAR v10+ SERVICES (Sprint 2 Specification)
+// ============================================================================
+
+/**
+ * Real-time subscription to tickets belonging to a community.
+ * Returns the unsubscribe cleanup function.
+ */
+export const subscribeTickets = (communityId, onUpdate, onError) => {
+  if (!db || !communityId) {
+    return () => {};
+  }
+
+  try {
+    const q = query(
+      collection(db, 'tickets'),
+      where('community_id', '==', communityId)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const ticketList = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+          // Ensure client-usable date format if serverTimestamp is pending
+          created_at: docSnap.data().server_created_at?.toDate
+            ? docSnap.data().server_created_at.toDate().toISOString()
+            : docSnap.data().created_at || new Date().toISOString()
+        }));
+
+        // Sort descending by created_at client-side to prevent missing index blocks
+        ticketList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        onUpdate(ticketList);
+      },
+      (error) => {
+        console.warn('Firestore tickets onSnapshot subscription warning/fallback:', error);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to attach Firestore ticket subscriber:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
+};
+
+/**
+ * Real-time subscription to all available communities.
+ * Returns the unsubscribe cleanup function.
+ */
+export const subscribeCommunities = (onUpdate, onError) => {
+  if (!db) return () => {};
+
+  try {
+    const q = collection(db, 'communities');
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            community_id: docSnap.id,
+            ...docSnap.data()
+          }));
+          onUpdate(list);
+        }
+      },
+      (error) => {
+        console.warn('Firestore communities subscription warning:', error);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to subscribe communities:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
+};
+
+/**
+ * Real-time subscription to NGO challenges.
+ * Returns the unsubscribe cleanup function.
+ */
+export const subscribeChallenges = (onUpdate, onError) => {
+  if (!db) return () => {};
+
+  try {
+    const q = collection(db, 'challenges');
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            challenge_id: docSnap.id,
+            ...docSnap.data()
+          }));
+          onUpdate(list);
+        }
+      },
+      (error) => {
+        console.warn('Firestore challenges subscription warning:', error);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Failed to subscribe challenges:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
+};
+
+/**
+ * Persist a new ticket into Cloud Firestore using modular v10+ setDoc with serverTimestamp.
+ */
+export const createTicketInFirestore = async (ticket) => {
+  if (!db) return ticket;
+  const docRef = doc(db, 'tickets', ticket.ticket_id);
+  await setDoc(docRef, {
+    ...ticket,
+    server_created_at: serverTimestamp(),
+    server_updated_at: serverTimestamp()
+  });
+  return ticket;
+};
+
+/**
+ * Update an existing ticket in Cloud Firestore with serverTimestamp.
+ */
+export const updateTicketInFirestore = async (ticketId, updateData) => {
+  if (!db) return;
+  const docRef = doc(db, 'tickets', ticketId);
+  await updateDoc(docRef, {
+    ...updateData,
+    server_updated_at: serverTimestamp()
+  });
+};
+
+/**
+ * Create a new community in Cloud Firestore.
+ */
+export const createCommunityInFirestore = async (community) => {
+  if (!db) return community;
+  const docRef = doc(db, 'communities', community.community_id);
+  await setDoc(docRef, {
+    ...community,
+    server_created_at: serverTimestamp()
+  });
+  return community;
+};
+
+/**
+ * Join an existing community in Cloud Firestore.
+ */
+export const joinCommunityInFirestore = async (communityId, member) => {
+  if (!db) return;
+  const docRef = doc(db, 'communities', communityId);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const currentMembers = docSnap.data().members || [];
+    await updateDoc(docRef, {
+      members: [...currentMembers, member],
+      server_updated_at: serverTimestamp()
+    });
+  }
+};
+
+/**
+ * Claim an NGO challenge in Cloud Firestore.
+ */
+export const claimChallengeInFirestore = async (challengeId, studentUserId, studentName) => {
+  if (!db) return;
+  const docRef = doc(db, 'challenges', challengeId);
+  await updateDoc(docRef, {
+    status: 'Claimed',
+    claimed_by_user_id: studentUserId,
+    claimed_by_user_name: studentName,
+    claimed_at: new Date().toISOString(),
+    server_updated_at: serverTimestamp()
+  });
+};
+
+/**
+ * Post a new NGO challenge in Cloud Firestore.
+ */
+export const postChallengeInFirestore = async (challenge) => {
+  if (!db) return challenge;
+  const docRef = doc(db, 'challenges', challenge.challenge_id);
+  await setDoc(docRef, {
+    ...challenge,
+    server_created_at: serverTimestamp()
+  });
+  return challenge;
+};
+
+/**
+ * Seed initial demonstration data into Cloud Firestore if collections are empty.
+ */
+export const seedDemoDataToFirestore = async () => {
+  if (!db) return;
+  try {
+    for (const comm of INITIAL_DEMO_COMMUNITIES) {
+      await setDoc(doc(db, 'communities', comm.community_id), {
+        ...comm,
+        server_created_at: serverTimestamp()
+      }, { merge: true });
+    }
+    for (const tkt of INITIAL_DEMO_TICKETS) {
+      await setDoc(doc(db, 'tickets', tkt.ticket_id), {
+        ...tkt,
+        server_created_at: serverTimestamp()
+      }, { merge: true });
+    }
+    for (const ch of INITIAL_DEMO_CHALLENGES) {
+      await setDoc(doc(db, 'challenges', ch.challenge_id), {
+        ...ch,
+        server_created_at: serverTimestamp()
+      }, { merge: true });
+    }
+  } catch (err) {
+    console.warn('Seeding demo data to Firestore skipped or encountered rule restriction:', err);
+  }
+};

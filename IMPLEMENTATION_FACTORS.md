@@ -5,17 +5,19 @@ It includes exact instructions on what to implement, the required API keys, and 
 
 ---
 
-## 1. Frontend (React + Vite + Tailwind CSS)
+## 1. Frontend (React + Vite + Tailwind CSS + Motion)
 **Role:** The primary interface for Residents, Admins, Wing Reps, and NGOs.
 
 **Implementation Strategy:**
 - **State Management:** React Context API (`AuthContext`, `CommunityContext`) manages global state.
-- **Styling:** Tailwind CSS provides rapid styling; ensure a polished, modern "glassmorphism" aesthetic.
+- **Styling & Glassmorphism:** Tailwind CSS provides rapid styling with custom slate-900 glassmorphism cards and emerald/amber/rose status tokens.
+- **Design-to-Code Pipeline:** Incorporate **Google Stitch** (Gemini prompt/sketch to UI) and **DesignRevision / Anima MCP** to import production-ready, accessible, mobile-first components rather than writing generic markup.
+- **Micro-Interactions (Anti-Slop):** Utilize `motion/react` with physics-based springs (`type: "spring", stiffness: 350, damping: 25`) on compositor properties (`transform`, `opacity`). Banned: animating `height`, `width`, or using linear easing.
 - **Routing:** Conditional component rendering based on `currentTab` and user `role`.
 - **Hosting:** Recommended to use **Vercel** or **Firebase Hosting**.
 
 **Requirements:**
-- Make sure to use standard functional components with hooks.
+- Standard functional components with hooks.
 - For production, build the app using `npm run build` and ensure there are no compilation errors.
 
 ---
@@ -41,15 +43,19 @@ It includes exact instructions on what to implement, the required API keys, and 
 
 ---
 
-## 3. Database (Cloud Firestore)
+## 3. Database (Cloud Firestore - Modular SDK v10+)
 **Role:** A scalable, real-time NoSQL database to persist Communities, Users, Tickets, and Challenges.
 
 **Implementation Strategy:**
+- **SDK Standard:** Strictly Firebase v10+ Modular SDK (`collection`, `doc`, `onSnapshot`, `setDoc`, `updateDoc`, `serverTimestamp`). Deprecated v8/v9 namespaced methods are prohibited.
 - **Data Architecture:**
-  - `users/{uid}`: `{ email, name, role, phone, wing }`
-  - `communities/{commId}`: `{ name, city, nomenclature, members_list }`
-  - `tickets/{ticketId}`: `{ title, description, resident_id, status, category, urgency, image_url }`
-- **Sync Method:** Use `onSnapshot` listeners to subscribe to collections. This ensures that when a ticket's status is modified by an Admin, the change reflects on the Resident's device immediately.
+  - `users/{uid}`: `{ email, name, role, wing, communityId, createdAt }`
+  - `communities/{commId}`: `{ name, city, nomenclature, members_list, createdAt }`
+  - `tickets/{ticketId}`: `{ title, description, category, urgency, status, residentId, residentName, communityId, wing, imageUrl, upvotes, createdAt, updatedAt }`
+  - `challenges/{challengeId}`: `{ title, description, ngoId, ngoName, communityId, tags, status, claimedBy, createdAt }`
+- **Sync & Memory Management:** Use `onSnapshot` listeners to subscribe to collections. Every listener attached inside a `useEffect` **must return its unsubscribe function** to prevent memory leaks and redundant billing costs.
+- **Timestamps:** Use `serverTimestamp()` on all write operations to eliminate client clock skew.
+- **Verification:** Validated via **Playwright MCP** multi-session browser testing ensuring real-time DOM reactivity across Resident and Admin roles without page reload.
 
 **API Keys Required: Firebase Config**
 - *See Section 4 for instructions.*
@@ -84,7 +90,21 @@ It includes exact instructions on what to implement, the required API keys, and 
 
 ---
 
+## 5. MCP Tooling Ecosystem (Sprint 2 Agent Guidelines)
+During Sprint 2, the development agent operates under the strict rules defined in [`SKILL.md`](./SKILL.md), interfacing with the following MCP servers:
+1. **Context7 MCP:** Enforces version-specific verification of Firebase v10+ and React 18 Context API before writing any database queries or mutations.
+2. **DesignRevision MCP:** Discovers, inspects, and installs accessible, production-grade Tailwind components directly into `frontend/src/components/`.
+3. **Anima MCP:** Connects design systems directly into React components, ensuring exact glassmorphism design tokens.
+4. **Google Stitch:** Gemini-powered tool converting text prompts and sketches directly into structured HTML/CSS mobile layouts.
+5. **motion.dev:** Enforces physics-based spring transitions and 60fps compositor performance audits (anti-slop).
+6. **Manus:** Orchestrates autonomous subagent delegation for repetitive boilerplate, test skeletons, and mock schemas.
+7. **Playwright MCP:** Drives dual-context headless browser sessions to assert that `onSnapshot` Firestore updates dynamically re-render the DOM without full-page reloads.
+
+---
+
 ## Best Practices for Sustainability
 1. **Never commit `.env` files.** Always add `.env` to `.gitignore`.
 2. **Graceful Degradation:** If the Gemini API or Backend fails, the frontend should fall back to manual data entry rather than crashing.
 3. **Simplicity:** Keep the project tightly scoped. Implement one Phase at a time, test thoroughly, and push clean PRs.
+4. **Zero-Leak Listeners:** Ensure every Firestore snapshot subscription is properly torn down when components unmount.
+

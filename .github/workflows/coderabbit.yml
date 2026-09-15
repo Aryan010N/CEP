@@ -1,0 +1,29 @@
+name: CodeRabbit PR Verification
+
+on:
+  pull_request:
+    branches: [ "main", "sprint-2" ]
+  pull_request_review_comment:
+    types: [ created ]
+  issue_comment:
+    types: [ created ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  coderabbit-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: CodeRabbit AI Code Review
+        uses: coderabbitai/ai-pr-reviewer@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          debug: false

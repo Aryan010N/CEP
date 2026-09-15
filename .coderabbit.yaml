@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "sprint-2"
+  tools:
+    ast-grep:
+      enabled: true
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    eslint:
+      enabled: true
+  path_filters:
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+    - "!**/venv/**"
+    - "!**/.git/**"
+  instructions: |
+    You are the CodeRabbit Senior Architect verifying Community Engagement Project (CEP) pull requests against our Sprint Roadmaps.
+    Enforce the following strict rules:
+    1. Firebase Modular SDK v10+ Enforcement:
+       - No Firebase v8/v9 namespaced/compat methods (`firebase.firestore()`).
+       - Ensure modular imports: `collection`, `doc`, `onSnapshot`, `serverTimestamp`, `setDoc`, `updateDoc`.
+    2. React 18 Context Lifecycle & Anti-Memory Leak:
+       - Every `onSnapshot` inside `useEffect` MUST return its unsubscribe cleanup function.
+    3. Anti-Slop & Micro-Interactions:
+       - Strictly use `motion/react` spring physics (`stiffness: 350, damping: 25`).
+       - Prohibit linear easing and layout-thrashing animations on `height`, `width`, or `margin`. Compositor-only properties (`transform`, `opacity`) are required.
+    4. Sprint Isolation:
+       - Verify that only tasks belonging to the active sprint (e.g. Sprint 2 Firestore data migration) are included. Reject premature phase 3/4 code.
+    5. Security & Access Control:
+       - Ensure Firestore queries include community isolation (`communityId`) and respect role-based access.
+chat:
+  auto_reply: true
