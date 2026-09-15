@@ -1,29 +1,44 @@
-name: CodeRabbit PR Verification
+name: Sprint Verification & Code Checks
 
 on:
+  push:
+    branches: [ "main", "sprint-2" ]
   pull_request:
     branches: [ "main", "sprint-2" ]
-  pull_request_review_comment:
-    types: [ created ]
-  issue_comment:
-    types: [ created ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  coderabbit-review:
+  sprint-compliance:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: CodeRabbit AI Code Review
-        uses: coderabbitai/ai-pr-reviewer@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          debug: false
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Run Sprint 2 Compliance Tests (Firestore, Lifecycle, Spring Motion)
+        run: node --test src/__tests__/firestore.test.js
+
+      - name: Verify Frontend Production Build
+        run: npm run build
+
+      - name: Validate CodeRabbit Configuration
+        run: |
+          if [ -f "../.coderabbit.yaml" ]; then
+            echo "✓ .coderabbit.yaml is properly configured for the CodeRabbit GitHub App."
+          else
+            echo "❌ Missing .coderabbit.yaml"
+            exit 1
+          fi
