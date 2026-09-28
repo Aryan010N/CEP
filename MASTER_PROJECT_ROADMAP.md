@@ -119,17 +119,22 @@ git push -u origin phase3-backend-ai
 ---
 
 ## Phase 4: Cloud Deployment (Going Live) - ⏳ UPCOMING
-**Goal:** Deploy the frontend to the web and the backend to a cloud server, making the app accessible to real users.
+**Goal:** Deploy the frontend to the web using Vercel and the backend to a cloud server, making the app accessible to real users.
 
 ### Implementation Steps
-1. **Frontend Deployment (Vercel):** Connect Vercel to your GitHub repo, add env vars (`VITE_FIREBASE_API_KEY`, etc.), and deploy.
+1. **Frontend Deployment (Vercel):** 
+   - Create an account on [Vercel](https://vercel.com/) and connect your GitHub repository.
+   - Import the CEP project and set the Root Directory to `frontend`.
+   - Vercel will automatically detect `Vite`.
+   - In the **Environment Variables** section, add all your Firebase config keys (`VITE_FIREBASE_API_KEY`, etc.).
+   - Click **Deploy** to push the frontend live.
 2. **Backend Deployment (Render/Railway):** Connect to GitHub, deploy the `backend/` directory, and set `GEMINI_API_KEY`.
-3. **Final Wiring:** Update `VITE_BACKEND_API_URL` in the frontend production environment to point to the live backend URL.
+3. **Final Wiring:** Update `VITE_BACKEND_API_URL` in the frontend Vercel project environment variables to point to the live backend URL, then trigger a redeploy.
 
 **Git Commands to push Phase 4:**
 ```bash
 git checkout -b phase4-deployment
 git add -A
-git commit -m "chore: prepare environment variables and configs for production deployment"
+git commit -m "chore: prepare environment variables and configs for production deployment on Vercel"
 git push -u origin phase4-deployment
 ```
