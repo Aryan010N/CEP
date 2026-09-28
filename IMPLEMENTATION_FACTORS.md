@@ -14,7 +14,12 @@ It includes exact instructions on what to implement, the required API keys, and 
 - **Design-to-Code Pipeline:** Incorporate **Google Stitch** (Gemini prompt/sketch to UI) and **DesignRevision / Anima MCP** to import production-ready, accessible, mobile-first components rather than writing generic markup.
 - **Micro-Interactions (Anti-Slop):** Utilize `motion/react` with physics-based springs (`type: "spring", stiffness: 350, damping: 25`) on compositor properties (`transform`, `opacity`). Banned: animating `height`, `width`, or using linear easing.
 - **Routing:** Conditional component rendering based on `currentTab` and user `role`.
-- **Hosting:** Recommended to use **Vercel** or **Firebase Hosting**.
+- **Hosting (Vercel):** The frontend is configured for deployment on Vercel. 
+  - **Prerequisites:**
+    1. A GitHub account with the project code pushed to it.
+    2. A Vercel account linked to your GitHub.
+    3. Firebase Configuration Keys (from the Firebase Console).
+  - **Deployment Steps:** Import the repository into Vercel, set the Framework Preset to `Vite`, configure the root directory to `frontend` (if needed), add the `.env` variables, and Deploy.
 
 **Requirements:**
 - Standard functional components with hooks.
