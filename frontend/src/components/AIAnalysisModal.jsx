@@ -144,26 +144,34 @@ export default function AIAnalysisModal({
             disabled={isSubmitting}
             className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors touch-press"
           >
-            Edit
+            {duplicateInfo?.is_duplicate ? "Back & Modify" : "Edit"}
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center gap-1.5 touch-press transition-all"
-          >
-            {isSubmitting ? (
-              <>
-                <Clock className="w-3.5 h-3.5 animate-spin" />
-                <span>Recording...</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                <span>Submit to {nom.verifier_label}</span>
-              </>
-            )}
-          </button>
+          
+          {duplicateInfo?.is_duplicate ? (
+             <div className="px-5 py-2.5 rounded-xl bg-slate-800 border border-amber-500/30 text-amber-500/70 text-xs font-bold flex items-center gap-1.5 cursor-not-allowed">
+               <AlertTriangle className="w-3.5 h-3.5" />
+               <span>Blocked: Duplicate</span>
+             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center gap-1.5 touch-press transition-all"
+            >
+              {isSubmitting ? (
+                <>
+                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                  <span>Recording...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Submit to {nom.verifier_label}</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </Modal>

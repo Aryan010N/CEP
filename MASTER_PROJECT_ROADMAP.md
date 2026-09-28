@@ -118,23 +118,41 @@ git push -u origin phase3-backend-ai
 
 ---
 
-## Phase 4: Cloud Deployment (Going Live) - ⏳ UPCOMING
+## Phase 4: Cloud Deployment (Going Live) - ✅ COMPLETED
 **Goal:** Deploy the frontend to the web using Vercel and the backend to a cloud server, making the app accessible to real users.
+**Status:** Deployed. Vercel and Render CI/CD pipelines are active. Pushing to `main` automatically updates production.
 
-### Implementation Steps
-1. **Frontend Deployment (Vercel):** 
-   - Create an account on [Vercel](https://vercel.com/) and connect your GitHub repository.
-   - Import the CEP project and set the Root Directory to `frontend`.
-   - Vercel will automatically detect `Vite`.
-   - In the **Environment Variables** section, add all your Firebase config keys (`VITE_FIREBASE_API_KEY`, etc.).
-   - Click **Deploy** to push the frontend live.
-2. **Backend Deployment (Render/Railway):** Connect to GitHub, deploy the `backend/` directory, and set `GEMINI_API_KEY`.
-3. **Final Wiring:** Update `VITE_BACKEND_API_URL` in the frontend Vercel project environment variables to point to the live backend URL, then trigger a redeploy.
+---
 
-**Git Commands to push Phase 4:**
-```bash
-git checkout -b phase4-deployment
-git add -A
-git commit -m "chore: prepare environment variables and configs for production deployment on Vercel"
-git push -u origin phase4-deployment
-```
+## Phase 5: AI Enforcement & Security Hardening (Addressing Loopholes) - ⏳ UPCOMING (Sprint 3)
+*Harsh Critique:* The platform is functional, but currently relies on trusting the user. There is no strict schema validation, meaning a malicious user could spam the database. Furthermore, while the Gemini backend exists, it is not strictly enforcing ticket deduplication *before* a ticket is saved.
+
+### Required Implementations (Sprint 3 Tasks)
+1. **Strict AI Deduplication Gate:** The frontend MUST send the ticket payload to the FastAPI Gemini endpoint first. If Gemini flags it as a duplicate, the UI must block the submission and show the resident the existing ticket.
+2. **Firestore Security Schema:** Write aggressive Firestore Security rules validating data types (e.g., `ticket.title` must be a string < 100 chars, `ticket.status` must only be updated by Admins). 
+3. **Rate Limiting:** Implement a cooldown (e.g., 1 ticket per minute per Resident) using Firestore timestamps to prevent spam.
+
+---
+
+## Phase 6: Production Features (Storage & Notifications) - ⏳ UPCOMING
+*Harsh Critique:* An engagement app without real evidence (photos) or notifications is just a glorified to-do list. Residents won't check the app daily to see if their ticket is resolved; they need to be notified.
+
+### Required Implementations
+1. **Firebase Storage Integration:** Replace string-based `imageUrl` with real file uploads so residents can attach photos of civic issues (e.g., broken pipes).
+2. **Push Notifications/Email:** When an Admin changes a ticket status to "Resolved", the system must notify the resident who created it.
+3. **Admin Analytics Dashboard:** Admins need aggregated metrics (Total Tickets, Resolution Rate, Top Categories) rather than just a list of complaints.
+
+---
+
+## Phase 7: Legal Standards & Production Resilience - ⏳ UPCOMING
+*Harsh Critique:* A project cannot be taken seriously by external coordinators or deployed publicly without covering edge cases, server exhaustion, and legal compliance. If Gemini goes down, the app shouldn't break. If a user wants their data deleted (GDPR), there must be a mechanism.
+
+### Required Implementations
+1. **API Exhaustion & Circuit Breakers:** 
+   - Implement fallback mechanisms. If the Gemini API hits its rate limit (429) or goes down, the backend must return a graceful degradation response, allowing the ticket to bypass AI checks temporarily rather than failing completely.
+2. **Custom Error Pages & Global Error Boundaries:**
+   - Implement strict React Error Boundaries so a component crash does not result in a blank white screen.
+   - Create branded 404 (Not Found) and 500 (Server Error) pages.
+3. **Legal & Compliance (Standardization):**
+   - **Privacy Policy & Terms of Service:** Add static, legally compliant routes (`/privacy`, `/terms`) detailing data collection (especially regarding Firebase and Gemini AI processing).
+   - **Right to be Forgotten (GDPR):** Add a mechanism for users to delete their account and associated tickets directly from the settings page.

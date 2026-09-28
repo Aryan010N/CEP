@@ -110,6 +110,11 @@ During Sprint 2, the development agent operates under the strict rules defined i
 ## Best Practices for Sustainability
 1. **Never commit `.env` files.** Always add `.env` to `.gitignore`.
 2. **Graceful Degradation:** If the Gemini API or Backend fails, the frontend should fall back to manual data entry rather than crashing.
-3. **Simplicity:** Keep the project tightly scoped. Implement one Phase at a time, test thoroughly, and push clean PRs.
-4. **Zero-Leak Listeners:** Ensure every Firestore snapshot subscription is properly torn down when components unmount.
+3. **Zero-Leak Listeners:** Ensure every Firestore snapshot subscription is properly torn down when components unmount.
+4. **Strict Schema Validation (Phase 5):** Firestore rules must enforce rate limits and string length checks to prevent database spamming.
+5. **AI Gatekeeping (Phase 5):** Frontend form submissions must await a `200 OK` from the FastAPI deduplication endpoint before writing to Firestore.
+6. **File Uploads (Phase 6):** Use Firebase Storage for image uploads. Store the resulting download URL in the Firestore ticket document.
+7. **Circuit Breaker Pattern (Phase 7):** Ensure backend endpoints catching `google.generativeai` exhaustion exceptions return a fallback payload so the frontend continues to operate.
+8. **UI Error Boundaries (Phase 7):** Wrap React application in an ErrorBoundary component. Any failure should display a branded `500 Server Error` page, not a white screen. Add explicit `404 Not Found` routing.
+9. **Legal Standardization (Phase 7):** Must include a `Privacy Policy` clearly defining that user inputs (complaints) are processed by Google's Gemini AI, and provide a GDPR-compliant `Delete Account` functionality.
 
