@@ -1,32 +1,53 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Sparkles, User, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { INITIAL_DEMO_USERS } from '../services/firebase';
+import { Shield, Sparkles, User, Lock, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters')
+});
 
 export default function Login({ onSwitchToRegister, onClose }) {
-  const { login, switchDemoRole } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    setErrors({});
+    setGlobalError('');
+
     try {
+      // Zod Validation
+      loginSchema.parse({ email, password });
+      
+      setIsLoading(true);
       await login(email, password);
       if (onClose) onClose();
     } catch (err) {
-      setError(err.message || 'Login failed.');
+      if (err instanceof z.ZodError) {
+        const fieldErrors = {};
+        err.errors.forEach(e => {
+          if (e.path[0]) {
+            fieldErrors[e.path[0]] = e.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        setGlobalError(err.message || 'Failed to authenticate. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleQuickDemoSelect = (roleKey) => {
-    switchDemoRole(roleKey);
-    if (onClose) onClose();
+  const handleQuickDemoSelect = async (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('CepDemo2024!');
   };
 
   return (
@@ -49,13 +70,13 @@ export default function Login({ onSwitchToRegister, onClose }) {
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            1-Click Evaluator Quick Login:
+            1-Click Evaluator Quick Fill:
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => handleQuickDemoSelect('resident')}
+            onClick={() => handleQuickDemoSelect('aarav@cep.demo')}
             className="p-2 rounded-xl border border-indigo-500/20 bg-indigo-900/30 hover:bg-indigo-800/40 text-left transition-colors"
           >
             <p className="text-xs font-bold text-indigo-200">Aarav Sharma</p>
@@ -63,7 +84,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
           </button>
           <button
             type="button"
-            onClick={() => handleQuickDemoSelect('wing_rep')}
+            onClick={() => handleQuickDemoSelect('vikram@cep.demo')}
             className="p-2 rounded-xl border border-emerald-500/20 bg-emerald-900/30 hover:bg-emerald-800/40 text-left transition-colors"
           >
             <p className="text-xs font-bold text-emerald-200">Vikram Malhotra</p>
@@ -71,7 +92,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
           </button>
           <button
             type="button"
-            onClick={() => handleQuickDemoSelect('admin')}
+            onClick={() => handleQuickDemoSelect('rajesh@cep.demo')}
             className="p-2 rounded-xl border border-purple-500/20 bg-purple-900/30 hover:bg-purple-800/40 text-left transition-colors"
           >
             <p className="text-xs font-bold text-purple-200">Dr. Rajesh Iyer</p>
@@ -79,7 +100,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
           </button>
           <button
             type="button"
-            onClick={() => handleQuickDemoSelect('ngo')}
+            onClick={() => handleQuickDemoSelect('anita@cep.demo')}
             className="p-2 rounded-xl border border-teal-500/20 bg-teal-900/30 hover:bg-teal-800/40 text-left transition-colors"
           >
             <p className="text-xs font-bold text-teal-200">Anita Deshmukh</p>
@@ -94,9 +115,10 @@ export default function Login({ onSwitchToRegister, onClose }) {
         <div className="h-px flex-1 bg-slate-800" />
       </div>
 
-      {error && (
-        <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs">
-          {error}
+      {globalError && (
+        <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>{globalError}</p>
         </div>
       )}
 
@@ -110,36 +132,37 @@ export default function Login({ onSwitchToRegister, onClose }) {
             <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
             <input
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. resident@campus.edu"
-              className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500"
+              className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border ${errors.email ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-sm focus:outline-none focus:border-indigo-500`}
             />
           </div>
+          {errors.email && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.email}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Password
+          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex justify-between">
+            <span>Password</span>
+            <button type="button" className="text-indigo-400 hover:text-indigo-300 lowercase normal-case">Forgot?</button>
           </label>
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
             <input
               type="password"
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500"
+              className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border ${errors.password ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-sm focus:outline-none focus:border-indigo-500`}
             />
           </div>
+          {errors.password && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.password}</p>}
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all"
+          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
         >
           <span>{isLoading ? "Authenticating..." : "Sign In to Account"}</span>
           <ArrowRight className="w-4 h-4" />

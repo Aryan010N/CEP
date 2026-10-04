@@ -33,50 +33,45 @@ const mapAuthError = (err) => {
 };
 
 export function AuthProvider({ children }) {
-  // Demo Mode toggle — persisted
-  const [isDemoMode, setIsDemoMode] = useState(() => {
-    const saved = localStorage.getItem('cep_demo_mode');
-    return saved === null ? true : saved === 'true'; // Default ON for first load
-  });
-
   const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Track initial auth load
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Listen for real Firebase Auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (isDemoMode) {
-        // If demo mode is active, we don't sync firebase auth directly to currentUser 
-        // to avoid clashing with the quick evaluator logins.
-        setIsLoading(false);
-        return;
-      }
-
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch extended attributes from localStorage (temporary Phase 1 mock for DB)
-        const extendedDataRaw = localStorage.getItem(`cep_user_${firebaseUser.uid}`);
-        let extendedData = {
-          role: 'resident',
-          community_id: 'comm_emerald_1',
-          wing: 'Wing A',
-          room_number: 'Room 101',
-          phone: '+91 99999 00000'
-        };
-
-        if (extendedDataRaw) {
-          try {
-            extendedData = JSON.parse(extendedDataRaw);
-          } catch (e) {
-            console.error("Failed to parse extended user data", e);
+        try {
+          const { getDoc, doc } = await import('firebase/firestore');
+          const { db } = await import('../services/firebase');
+          const docSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
+          
+          if (docSnap.exists()) {
+            const extendedData = docSnap.data();
+            setCurrentUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || extendedData.displayName || "Resident",
+              ...extendedData,
+              community_id: extendedData.communityId || extendedData.community_id
+            });
+          } else {
+            setCurrentUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || "Resident",
+              role: 'resident',
+              community_id: 'comm_emerald_1'
+            });
           }
+        } catch (error) {
+          console.error("Failed to load user from Firestore", error);
+          setCurrentUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || "Resident",
+            role: 'resident',
+            community_id: 'comm_emerald_1'
+          });
         }
-
-        setCurrentUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || extendedData.name || "Resident",
-          ...extendedData
-        });
       } else {
         setCurrentUser(null);
       }
@@ -84,54 +79,20 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
-  }, [isDemoMode]);
-
-  // Demo mode persistance sync
-  useEffect(() => {
-    localStorage.setItem('cep_demo_mode', String(isDemoMode));
-    
-    // When toggling demo mode ON, set a default demo user
-    if (isDemoMode) {
-      setCurrentUser(INITIAL_DEMO_USERS[0]);
-    } else {
-      // When toggling OFF, check if Firebase has a user logged in
-      if (auth.currentUser) {
-        const firebaseUser = auth.currentUser;
-        const extendedDataRaw = localStorage.getItem(`cep_user_${firebaseUser.uid}`);
-        let extendedData = { role: 'resident' };
-        if (extendedDataRaw) {
-          try { extendedData = JSON.parse(extendedDataRaw); } catch (e) {}
-        }
-        setCurrentUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName,
-          ...extendedData
-        });
-      } else {
-        setCurrentUser(null);
-      }
-    }
-  }, [isDemoMode]);
+  }, []);
 
 
   // Firebase Login
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Let onAuthStateChanged handle setting the user if demo mode is off
-      
-      // If demo mode is on but they logged in manually, switch demo mode off
-      if (isDemoMode) {
-        setIsDemoMode(false);
-      }
       return userCredential.user;
     } catch (error) {
       throw new Error(mapAuthError(error));
     }
   };
 
-  // Firebase Signup + LocalStorage extended mock
+  // Firebase Signup + Firestore User Record
   const signup = async ({ email, password, name, role, community_id, wing, room_number, phone }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -140,19 +101,19 @@ export function AuthProvider({ children }) {
         displayName: name
       });
 
-      // Temporary Phase 1: Store extended attributes in localStorage
-      // Phase 2 will move this to Firestore `users/{uid}` document.
-      const extendedData = {
-        name,
+      const { setDoc, doc } = await import('firebase/firestore');
+      const { db } = await import('../services/firebase');
+      
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email,
+        displayName: name,
         role: role || 'resident',
-        community_id: community_id || 'comm_emerald_1',
+        communityId: community_id || 'comm_emerald_1',
         wing: wing || 'Wing A',
-        room_number: room_number || 'Room 101',
-        phone: phone || '+91 99999 00000',
-      };
-      localStorage.setItem(`cep_user_${userCredential.user.uid}`, JSON.stringify(extendedData));
-
-      if (isDemoMode) setIsDemoMode(false);
+        room_number: room_number || '',
+        phone: phone || '',
+        createdAt: new Date().toISOString()
+      });
 
       return userCredential.user;
     } catch (error) {
@@ -162,25 +123,8 @@ export function AuthProvider({ children }) {
 
   // Firebase Logout
   const logout = async () => {
-    if (isDemoMode) {
-      setCurrentUser(null);
-      return;
-    }
     await signOut(auth);
     setCurrentUser(null);
-  };
-
-  // Instant 1-Click Role Switcher for Assessment / Demo (only works in demo mode)
-  const switchDemoRole = (roleKey) => {
-    if (!isDemoMode) return;
-    const target = INITIAL_DEMO_USERS.find(u => u.role === roleKey || u.uid === roleKey);
-    if (target) {
-      setCurrentUser(target);
-    }
-  };
-
-  const toggleDemoMode = () => {
-    setIsDemoMode(prev => !prev);
   };
 
   const value = {
@@ -188,9 +132,6 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
-    switchDemoRole,
-    toggleDemoMode,
-    isDemoMode,
     isAuthenticated: !!currentUser,
     role: currentUser?.role || 'resident',
     isLoading
