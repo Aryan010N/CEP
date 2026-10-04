@@ -1,7 +1,27 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCommunity } from '../context/CommunityContext';
-import { Shield, User, Lock, Mail, Building2, MapPin, Phone, ArrowRight, Check } from 'lucide-react';
+import { Shield, User, Lock, Mail, Building2, MapPin, Phone, ArrowRight, Check, AlertTriangle } from 'lucide-react';
+import { z } from 'zod';
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'Name is too short').max(50, 'Name is too long'),
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters').regex(/[A-Z]/, 'Needs an uppercase letter').regex(/[0-9]/, 'Needs a number'),
+  phone: z.string().min(10, 'Invalid phone number').max(15, 'Invalid phone number'),
+  role: z.enum(['resident', 'wing_rep', 'admin', 'ngo']),
+  community_id: z.string().optional(),
+  wing: z.string().optional(),
+  room_number: z.string().optional()
+}).refine(data => {
+  if (data.role === 'resident' && (!data.room_number || data.room_number.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Room number is required for residents",
+  path: ["room_number"]
+});
 
 export default function Register({ onSwitchToLogin, onClose }) {
   const { signup } = useAuth();
@@ -18,21 +38,36 @@ export default function Register({ onSwitchToLogin, onClose }) {
     phone: ''
   });
 
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const selectedCommunity = communities.find(c => c.community_id === formData.community_id) || communities[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+    setErrors({});
+    setGlobalError('');
+    
     try {
+      // Validate with Zod
+      registerSchema.parse(formData);
+      
+      setIsLoading(true);
       await signup(formData);
       if (onClose) onClose();
     } catch (err) {
-      setError(err.message || 'Registration failed.');
+      if (err instanceof z.ZodError) {
+        const fieldErrors = {};
+        err.errors.forEach(e => {
+          if (e.path[0]) {
+            fieldErrors[e.path[0]] = e.message;
+          }
+        });
+        setErrors(fieldErrors);
+      } else {
+        setGlobalError(err.message || 'Registration failed. Try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -60,9 +95,10 @@ export default function Register({ onSwitchToLogin, onClose }) {
         </p>
       </div>
 
-      {error && (
-        <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs">
-          {error}
+      {globalError && (
+        <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>{globalError}</p>
         </div>
       )}
 
@@ -108,13 +144,13 @@ export default function Register({ onSwitchToLogin, onClose }) {
               <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               <input
                 type="text"
-                required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Rohan Verma"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                className={`w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border ${errors.name ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-xs focus:outline-none focus:border-indigo-500`}
               />
             </div>
+            {errors.name && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.name}</p>}
           </div>
 
           <div>
@@ -125,13 +161,13 @@ export default function Register({ onSwitchToLogin, onClose }) {
               <Phone className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               <input
                 type="text"
-                required
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+91 98765 43210"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                className={`w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border ${errors.phone ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-xs focus:outline-none focus:border-indigo-500`}
               />
             </div>
+            {errors.phone && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.phone}</p>}
           </div>
         </div>
 
@@ -145,13 +181,13 @@ export default function Register({ onSwitchToLogin, onClose }) {
               <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               <input
                 type="email"
-                required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="rohan@campus.edu"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                className={`w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border ${errors.email ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-xs focus:outline-none focus:border-indigo-500`}
               />
             </div>
+            {errors.email && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.email}</p>}
           </div>
 
           <div>
@@ -162,13 +198,13 @@ export default function Register({ onSwitchToLogin, onClose }) {
               <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               <input
                 type="password"
-                required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                className={`w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border ${errors.password ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-xs focus:outline-none focus:border-indigo-500`}
               />
             </div>
+            {errors.password && <p className="text-rose-400 text-[10px] mt-1 ml-1">{errors.password}</p>}
           </div>
         </div>
 
@@ -211,11 +247,10 @@ export default function Register({ onSwitchToLogin, onClose }) {
                 <label className="block text-[11px] font-semibold text-slate-400 mb-1">Room / Flat #</label>
                 <input
                   type="text"
-                  required={formData.role === 'resident'}
                   value={formData.room_number}
                   onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
                   placeholder="e.g. A-302"
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                  className={`w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border ${errors.room_number ? 'border-rose-500' : 'border-slate-700'} text-slate-200 text-xs focus:outline-none focus:border-indigo-500`}
                 />
               </div>
             </div>
@@ -225,7 +260,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all"
+          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
         >
           <span>{isLoading ? "Creating Account..." : "Complete Registration"}</span>
           <ArrowRight className="w-4 h-4" />
