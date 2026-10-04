@@ -33,6 +33,15 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+export class DuplicateTicketError extends Error {
+  constructor(duplicateOf, reason) {
+    super(reason || "A similar complaint already exists.");
+    this.name = "DuplicateTicketError";
+    this.duplicateOf = duplicateOf;
+    this.reason = reason;
+  }
+}
+
 // Check if real Firebase credentials have been configured
 export const isFirestoreConfigured = () => {
   const key = import.meta.env.VITE_FIREBASE_API_KEY;
@@ -372,12 +381,41 @@ export const subscribeChallenges = (onUpdate, onError) => {
 
 /**
  * Persist a new ticket into Cloud Firestore using modular v10+ setDoc with serverTimestamp.
+ * Enforces a strict blocking AI deduplication gate before writing to the database.
  */
 export const createTicketInFirestore = async (ticket) => {
   if (!db) return ticket;
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  try {
+    const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        title: ticket.title, 
+        description: ticket.description,
+        communityId: ticket.community_id,
+        wing: ticket.wing 
+      })
+    });
+    
+    if (dedupResponse.ok) {
+      const dedupResult = await dedupResponse.json();
+      if (dedupResult.is_duplicate) {
+        throw new DuplicateTicketError(dedupResult.matched_ticket_id, dedupResult.reasoning);
+      }
+    }
+  } catch (error) {
+    if (error instanceof DuplicateTicketError) {
+      throw error; // Re-throw to be caught by the UI
+    }
+    console.warn("Deduplication check failed or backend unreachable, proceeding with save:", error);
+  }
+
   const docRef = doc(db, 'tickets', ticket.ticket_id);
   await setDoc(docRef, {
     ...ticket,
+    isDuplicate: false,
     server_created_at: serverTimestamp(),
     server_updated_at: serverTimestamp()
   });
