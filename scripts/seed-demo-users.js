@@ -1,21 +1,23 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const path = require('path');
 
-// Ensure you have FIREBASE_SERVICE_ACCOUNT_JSON env var or path set
-// Usage: node scripts/seed-demo-users.js
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '../backend/serviceAccount.json';
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || path.join(__dirname, '../backend/serviceAccount.json');
 
 try {
   const serviceAccount = require(serviceAccountPath);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+  initializeApp({
+    credential: cert(serviceAccount)
   });
 } catch (err) {
-  console.error("Failed to load service account key. Ensure FIREBASE_SERVICE_ACCOUNT_JSON is set or the file exists.");
+  console.error("Initialization failed:", err.message);
+  console.error(err.stack);
   process.exit(1);
 }
 
-const db = admin.firestore();
-const auth = admin.auth();
+const db = getFirestore();
+const auth = getAuth();
 
 const demoUsers = [
   {
@@ -57,7 +59,6 @@ async function seedUsers() {
   
   for (const user of demoUsers) {
     try {
-      // Create user in Auth
       let userRecord;
       try {
         userRecord = await auth.getUserByEmail(user.email);
@@ -76,7 +77,6 @@ async function seedUsers() {
         }
       }
 
-      // Write to Firestore
       const userRef = db.collection('users').doc(userRecord.uid);
       await userRef.set({
         role: user.role,
@@ -87,7 +87,7 @@ async function seedUsers() {
         fcmToken: null,
         cepCredits: 0,
         migrated: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp()
       }, { merge: true });
 
       console.log(`Firestore document seeded for ${user.email}`);
