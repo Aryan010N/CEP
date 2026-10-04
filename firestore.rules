@@ -18,6 +18,11 @@ service cloud.firestore {
       return isAuthenticated() && getUserData().communityId == communityId;
     }
 
+    function isWingRep(community_id, wing) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/communities/$(community_id)).data.wing_reps[request.auth.uid] == wing;
+    }
+
     // Users can only read/write their own doc
     match /users/{uid} {
       allow read: if request.auth.uid == uid;
@@ -34,9 +39,7 @@ service cloud.firestore {
         && request.resource.data.description is string
         && request.resource.data.description.size() <= 1000
         && request.resource.data.submittedBy == request.auth.uid;
-      allow update: if isAuthenticated()
-        && (hasRole('admin') || (hasRole('wingRep') && getUserData().wing == resource.data.wing))
-        && request.resource.data.keys().hasOnly(['status', 'assignedTo', 'updatedAt', 'resolvedAt']);
+      allow update, delete: if isWingRep(resource.data.community_id, resource.data.wing) || hasRole('admin');
     }
 
     // NGO Challenges
@@ -53,7 +56,7 @@ service cloud.firestore {
     // Communities
     match /communities/{communityId} {
       allow read: if isAuthenticated();
-      allow write: if hasRole('admin');
+      allow write: if hasRole('admin') || isWingRep(communityId, request.resource.data.wing);
     }
   }
 }
