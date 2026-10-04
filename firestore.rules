@@ -1,80 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    
-    function isMemberOf(communityId) {
-      return isAuthenticated() && (
-        getUserData().community_id == communityId ||
-        getUserData().communityId == communityId
-      );
-    }
-    
-    function isWingRep(communityId, wing) {
-      return isMemberOf(communityId) && 
-        getUserData().role == 'wing_rep' && 
-        getUserData().wing == wing;
-    }
-    
-    function isAdmin(communityId) {
-      return isMemberOf(communityId) && getUserData().role == 'admin';
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
     }
 
-    // Communities collection
-    match /communities/{communityId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        isAdmin(communityId) || 
-        // Allow users to join community (add themselves to members array)
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'server_updated_at'])
-      );
-      allow delete: if isAdmin(communityId);
+    function isSameCommunity(communityId) {
+      return isAuthenticated() && getUserData().communityId == communityId;
     }
 
-    // Users collection
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+    function isWingRep(community_id, wing) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/communities/$(community_id)).data.wing_reps[request.auth.uid] == wing;
     }
 
-    // Tickets collection
+    // Users can only read/write their own doc
+    match /users/{uid} {
+      allow read: if request.auth.uid == uid;
+      allow create: if request.auth.uid == uid;
+      allow update: if request.auth.uid == uid;
+    }
+
+    // Tickets
     match /tickets/{ticketId} {
-      allow read: if isAuthenticated();
-      
-      // Residents can create tickets for their own community
-      allow create: if isAuthenticated() && 
-        request.resource.data.community_id != null &&
-        request.resource.data.title != null;
-        
-      // Updates based on role:
-      // 1. Wing Reps can verify/reject tickets in their wing
-      // 2. Admins can assign workers and update status
-      // 3. Ticket creators can update description or resolve
-      allow update: if isAuthenticated() && (
-        isAdmin(resource.data.community_id) ||
-        isWingRep(resource.data.community_id, resource.data.wing) ||
-        resource.data.resident_id == request.auth.uid
-      );
-      
-      allow delete: if isAuthenticated() && isAdmin(resource.data.community_id);
+      allow read: if isAuthenticated() && isSameCommunity(resource.data.communityId);
+      allow create: if isAuthenticated()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 1000
+        && request.resource.data.submittedBy == request.auth.uid;
+      allow update, delete: if isWingRep(resource.data.community_id, resource.data.wing) || hasRole('admin');
     }
 
-    // Challenges collection (NGO Marketplace)
+    // NGO Challenges
     match /challenges/{challengeId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      // Allow students to claim challenges or NGO to update details
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated() && getUserData().role == 'admin';
+      allow create: if hasRole('ngo')
+        && request.resource.data.postedBy == request.auth.uid
+        && request.resource.data.title.size() <= 120;
+      allow update: if isAuthenticated()
+        && (resource.data.postedBy == request.auth.uid
+          || (resource.data.status == 'Open' && request.auth.uid != null));
+    }
+
+    // Communities
+    match /communities/{communityId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('admin') || isWingRep(communityId, request.resource.data.wing);
     }
   }
 }
