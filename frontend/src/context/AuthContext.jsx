@@ -35,6 +35,28 @@ const mapAuthError = (err) => {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(() => localStorage.getItem('demoMode') === 'true');
+
+  const toggleDemoMode = () => {
+    setIsDemoMode(prev => {
+      const next = !prev;
+      localStorage.setItem('demoMode', next);
+      return next;
+    });
+  };
+
+  const switchDemoRole = async (roleKey) => {
+    const roleEmailMap = {
+      'resident': 'aarav@cep.demo',
+      'wing_rep': 'vikram@cep.demo',
+      'admin': 'rajesh@cep.demo',
+      'ngo': 'anita@cep.demo'
+    };
+    const email = roleEmailMap[roleKey];
+    if (email) {
+      await login(email, 'CepDemo2024!');
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -134,7 +156,10 @@ export function AuthProvider({ children }) {
     logout,
     isAuthenticated: !!currentUser,
     role: currentUser?.role || 'resident',
-    isLoading
+    isLoading,
+    isDemoMode,
+    toggleDemoMode,
+    switchDemoRole
   };
 
   return (

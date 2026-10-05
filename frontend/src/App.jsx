@@ -58,7 +58,14 @@ function AppContent() {
     const action = params.get('action');
     const communityId = params.get('community');
 
-    if (action === 'join' && communityId) {
+    if (action === 'join' && communityId && !isLoading) {
+      if (!isAuthenticated) {
+        setAuthMode('login');
+        setShowAuthModal(true);
+        // We do NOT clear the URL yet, so after login the effect runs again and joins
+        return;
+      }
+      
       // Attempt to join community
       setTimeout(() => {
         joinCommunity(communityId);
@@ -66,7 +73,7 @@ function AppContent() {
         window.history.replaceState({}, '', window.location.pathname);
       }, 500);
     }
-  }, []);
+  }, [isAuthenticated, isLoading]);
 
   // Tab guard — enforce allowed tabs
   const handleSetCurrentTab = (tabId) => {
