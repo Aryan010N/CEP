@@ -3,85 +3,7 @@ import Modal from './Modal';
 import { QrCode, Download, Share2, Printer, Check, MapPin, UserPlus, Copy, Link2 } from 'lucide-react';
 import { useCommunity } from '../context/CommunityContext';
 
-// Lightweight QR code matrix generator (pure JS, no dependencies)
-function generateQRMatrix(text) {
-  // Creates a simple visual QR-like pattern seeded by text content.
-  // For production, use a library. This is a deterministic visual representation.
-  const size = 25;
-  const matrix = Array.from({ length: size }, () => Array(size).fill(false));
-  
-  // Hash function for text
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit int
-  }
-  
-  // Position detection patterns (top-left, top-right, bottom-left)
-  const drawFinderPattern = (cx, cy) => {
-    for (let y = -3; y <= 3; y++) {
-      for (let x = -3; x <= 3; x++) {
-        const px = cx + x, py = cy + y;
-        if (px >= 0 && px < size && py >= 0 && py < size) {
-          const isOuter = Math.abs(x) === 3 || Math.abs(y) === 3;
-          const isInner = Math.abs(x) <= 1 && Math.abs(y) <= 1;
-          matrix[py][px] = isOuter || isInner;
-        }
-      }
-    }
-  };
-
-  drawFinderPattern(3, 3);
-  drawFinderPattern(size - 4, 3);
-  drawFinderPattern(3, size - 4);
-
-  // Fill data area with deterministic pattern from hash
-  let seed = Math.abs(hash);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      // Skip finder patterns
-      const inFinder = (x <= 7 && y <= 7) || (x >= size - 8 && y <= 7) || (x <= 7 && y >= size - 8);
-      if (inFinder) continue;
-      
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      matrix[y][x] = (seed % 3) === 0;
-    }
-  }
-
-  // Timing patterns
-  for (let i = 8; i < size - 8; i++) {
-    matrix[6][i] = i % 2 === 0;
-    matrix[i][6] = i % 2 === 0;
-  }
-
-  return matrix;
-}
-
-function QRCodeSVG({ text, size = 160, darkColor = '#0f172a', lightColor = '#ffffff' }) {
-  const matrix = useMemo(() => generateQRMatrix(text), [text]);
-  const cellSize = size / matrix.length;
-  
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="rounded-lg">
-      <rect width={size} height={size} fill={lightColor} />
-      {matrix.map((row, y) =>
-        row.map((cell, x) =>
-          cell ? (
-            <rect
-              key={`${x}-${y}`}
-              x={x * cellSize}
-              y={y * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill={darkColor}
-            />
-          ) : null
-        )
-      )}
-    </svg>
-  );
-}
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function QRCodeModal({ isOpen, onClose }) {
   const { activeCommunity, getInviteCode } = useCommunity();
@@ -135,47 +57,45 @@ export default function QRCodeModal({ isOpen, onClose }) {
     ctx.fillStyle = '#4f46e5';
     ctx.fillText(activeTab === 'invite' ? 'Scan to Join Community' : 'Scan to Report Problem', w / 2, 85);
     
-    // QR code area
-    const qrUrl = activeTab === 'invite' ? inviteUrl : spotUrl;
-    const matrix = generateQRMatrix(qrUrl);
-    const qrSize = 300;
-    const cellSize = qrSize / matrix.length;
-    const qrX = (w - qrSize) / 2;
-    const qrY = 120;
+    // Need to trigger standard window.print() or download of the SVG
+    // For download PNG we can convert SVG to Canvas
+    const svgNode = document.querySelector(activeTab === 'invite' ? '#invite-qr svg' : '#spot-qr svg');
+    if (!svgNode) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgNode);
+    const DOMURL = window.URL || window.webkitURL || window;
     
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(qrX - 20, qrY - 20, qrSize + 40, qrSize + 40);
+    const img = new Image();
+    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+    const url = DOMURL.createObjectURL(svgBlob);
     
-    matrix.forEach((row, y) => {
-      row.forEach((cell, x) => {
-        if (cell) {
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(qrX + x * cellSize, qrY + y * cellSize, cellSize, cellSize);
-        }
-      });
-    });
-    
-    // Community info
-    ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 20px system-ui, sans-serif';
-    ctx.fillText(activeCommunity?.name || 'Community', w / 2, qrY + qrSize + 60);
-    
-    if (activeTab === 'spot') {
-      ctx.font = '16px system-ui, sans-serif';
-      ctx.fillStyle = '#475569';
-      ctx.fillText(`${selectedWing} — ${selectedLocation}`, w / 2, qrY + qrSize + 90);
-    }
-    
-    ctx.font = '14px system-ui, sans-serif';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText('Scan with your phone camera', w / 2, h - 60);
-    ctx.fillText('Powered by AI Community Observatory', w / 2, h - 35);
-    
-    // Download
-    const link = document.createElement('a');
-    link.download = `qr-${activeTab}-${activeCommunity?.community_id || 'community'}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    img.onload = function () {
+      ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+      DOMURL.revokeObjectURL(url);
+      
+      // Community info
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText(activeCommunity?.name || 'Community', w / 2, qrY + qrSize + 60);
+      
+      if (activeTab === 'spot') {
+        ctx.font = '16px system-ui, sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText(`${selectedWing} — ${selectedLocation}`, w / 2, qrY + qrSize + 90);
+      }
+      
+      ctx.font = '14px system-ui, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Scan with your phone camera', w / 2, h - 60);
+      ctx.fillText('Powered by AI Community Observatory', w / 2, h - 35);
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `qr-${activeTab}-${activeCommunity?.community_id || 'community'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+    img.src = url;
   };
 
   return (
@@ -221,8 +141,8 @@ export default function QRCodeModal({ isOpen, onClose }) {
                 </h4>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
-                <QRCodeSVG text={inviteUrl} size={180} />
+              <div id="invite-qr" className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
+                <QRCodeSVG value={inviteUrl} size={180} fgColor="#0f172a" />
               </div>
 
               <div className="space-y-1">
@@ -319,8 +239,8 @@ export default function QRCodeModal({ isOpen, onClose }) {
                 </h4>
               </div>
 
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
-                <QRCodeSVG text={spotUrl} size={160} />
+              <div id="spot-qr" className="p-3 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner">
+                <QRCodeSVG value={spotUrl} size={160} fgColor="#0f172a" />
               </div>
 
               <div className="space-y-1">

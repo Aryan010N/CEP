@@ -47,7 +47,21 @@ export default function Login({ onSwitchToRegister, onClose }) {
 
   const handleQuickDemoSelect = async (demoEmail) => {
     setEmail(demoEmail);
-    setPassword('CepDemo2024!');
+    const demoPassword = 'CepDemo2024!';
+    setPassword(demoPassword);
+    
+    setErrors({});
+    setGlobalError('');
+    setIsLoading(true);
+    
+    try {
+      await login(demoEmail, demoPassword);
+      if (onClose) onClose();
+    } catch (err) {
+      setGlobalError(err.message || 'Failed to authenticate. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
