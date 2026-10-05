@@ -73,10 +73,16 @@ export default function Register({ onSwitchToLogin, onClose }) {
     }
   };
 
+  const nom = selectedCommunity?.nomenclature || {
+    reporter_label: "Resident / Student",
+    verifier_label: "Wing Representative",
+    authority_label: "Estate Warden / Admin"
+  };
+
   const roleOptions = [
-    { id: 'resident', title: 'Resident / Student', desc: 'Report room & floor issues, claim NGO projects' },
-    { id: 'wing_rep', title: 'Wing Representative', desc: 'Verify, filter spam & forward wing issues to maintenance' },
-    { id: 'admin', title: 'Estate Warden / Admin', desc: 'Assign workforce & monitor community resolution analytics' },
+    { id: 'resident', title: nom.reporter_label, desc: 'Report room & floor issues, claim NGO projects' },
+    { id: 'wing_rep', title: nom.verifier_label, desc: 'Verify, filter spam & forward wing issues to maintenance' },
+    { id: 'admin', title: nom.authority_label, desc: 'Assign workforce & monitor community resolution analytics' },
     { id: 'ngo', title: 'NGO Partner', desc: 'Publish operational problem statements for students' },
   ];
 
@@ -231,7 +237,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">Wing / Block</label>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">{nom.division_label || "Wing / Block"}</label>
                 <select
                   value={formData.wing}
                   onChange={(e) => setFormData({ ...formData, wing: e.target.value })}

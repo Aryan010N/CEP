@@ -9,7 +9,7 @@ const loginSchema = z.object({
 });
 
 export default function Login({ onSwitchToRegister, onClose }) {
-  const { login } = useAuth();
+  const { login, isDemoMode } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -80,54 +80,58 @@ export default function Login({ onSwitchToRegister, onClose }) {
       </div>
 
       {/* Quick Demo Logins for Assessment Evaluation */}
-      <div className="p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-900/60 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            1-Click Evaluator Quick Fill:
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickDemoSelect('aarav@cep.demo')}
-            className="p-2 rounded-xl border border-indigo-500/20 bg-indigo-900/30 hover:bg-indigo-800/40 text-left transition-colors"
-          >
-            <p className="text-xs font-bold text-indigo-200">Aarav Sharma</p>
-            <p className="text-[10px] text-indigo-300/80">Resident (Wing A)</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemoSelect('vikram@cep.demo')}
-            className="p-2 rounded-xl border border-emerald-500/20 bg-emerald-900/30 hover:bg-emerald-800/40 text-left transition-colors"
-          >
-            <p className="text-xs font-bold text-emerald-200">Vikram Malhotra</p>
-            <p className="text-[10px] text-emerald-300/80">Wing Rep (Wing A)</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemoSelect('rajesh@cep.demo')}
-            className="p-2 rounded-xl border border-purple-500/20 bg-purple-900/30 hover:bg-purple-800/40 text-left transition-colors"
-          >
-            <p className="text-xs font-bold text-purple-200">Dr. Rajesh Iyer</p>
-            <p className="text-[10px] text-purple-300/80">Chief Warden / Admin</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickDemoSelect('anita@cep.demo')}
-            className="p-2 rounded-xl border border-teal-500/20 bg-teal-900/30 hover:bg-teal-800/40 text-left transition-colors"
-          >
-            <p className="text-xs font-bold text-teal-200">Anita Deshmukh</p>
-            <p className="text-[10px] text-teal-300/80">GreenTech NGO Lead</p>
-          </button>
-        </div>
-      </div>
+      {isDemoMode && (
+        <>
+          <div className="p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-900/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                1-Click Evaluator Quick Fill:
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickDemoSelect('aarav@cep.demo')}
+                className="p-2 rounded-xl border border-indigo-500/20 bg-indigo-900/30 hover:bg-indigo-800/40 text-left transition-colors"
+              >
+                <p className="text-xs font-bold text-indigo-200">Aarav Sharma</p>
+                <p className="text-[10px] text-indigo-300/80">Resident (Wing A)</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoSelect('vikram@cep.demo')}
+                className="p-2 rounded-xl border border-emerald-500/20 bg-emerald-900/30 hover:bg-emerald-800/40 text-left transition-colors"
+              >
+                <p className="text-xs font-bold text-emerald-200">Vikram Malhotra</p>
+                <p className="text-[10px] text-emerald-300/80">Wing Rep (Wing A)</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoSelect('rajesh@cep.demo')}
+                className="p-2 rounded-xl border border-purple-500/20 bg-purple-900/30 hover:bg-purple-800/40 text-left transition-colors"
+              >
+                <p className="text-xs font-bold text-purple-200">Dr. Rajesh Iyer</p>
+                <p className="text-[10px] text-purple-300/80">Chief Warden / Admin</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoSelect('anita@cep.demo')}
+                className="p-2 rounded-xl border border-teal-500/20 bg-teal-900/30 hover:bg-teal-800/40 text-left transition-colors"
+              >
+                <p className="text-xs font-bold text-teal-200">Anita Deshmukh</p>
+                <p className="text-[10px] text-teal-300/80">GreenTech NGO Lead</p>
+              </button>
+            </div>
+          </div>
 
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-slate-800" />
-        <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Or enter credentials</span>
-        <div className="h-px flex-1 bg-slate-800" />
-      </div>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Or enter credentials</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
+        </>
+      )}
 
       {globalError && (
         <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">

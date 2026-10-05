@@ -13,6 +13,7 @@ import ResidentDashboard from './pages/ResidentDashboard';
 import WingRepDashboard from './pages/WingRepDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import NGOMarketplace from './pages/NGOMarketplace';
+import LandingPage from './pages/LandingPage';
 import TicketCard from './components/TicketCard';
 import { Layers, Search, Filter, Shield, Sparkles, Building2 } from 'lucide-react';
 
@@ -135,33 +136,38 @@ function AppContent() {
       {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-5">
         
-        {/* Left Sidebar on Desktop */}
-        <Sidebar currentTab={currentTab} setCurrentTab={handleSetCurrentTab} />
+        {isAuthenticated && (
+          <Sidebar currentTab={currentTab} setCurrentTab={handleSetCurrentTab} />
+        )}
 
         {/* Dynamic Center Main Area */}
         <main className="flex-1 min-w-0">
-          {/* 1. Resident / Reporter View */}
-          {role === 'resident' && currentTab === 'resident_dashboard' && (
-            <ResidentDashboard />
-          )}
+          {!isAuthenticated ? (
+            <LandingPage onOpenAuth={() => { setAuthMode('login'); setShowAuthModal(true); }} />
+          ) : (
+            <>
+              {/* 1. Resident / Reporter View */}
+              {role === 'resident' && currentTab === 'resident_dashboard' && (
+                <ResidentDashboard />
+              )}
 
-          {/* 2. Verifier View */}
-          {role === 'wing_rep' && currentTab === 'rep_backlog' && (
-            <WingRepDashboard />
-          )}
+              {/* 2. Verifier View */}
+              {role === 'wing_rep' && currentTab === 'rep_backlog' && (
+                <WingRepDashboard />
+              )}
 
-          {/* 3. Admin / Authority View */}
-          {role === 'admin' && (currentTab === 'admin_dashboard' || currentTab === 'admin_analytics') && (
-            <AdminDashboard currentTab={currentTab} />
-          )}
+              {/* 3. Admin / Authority View */}
+              {role === 'admin' && (currentTab === 'admin_dashboard' || currentTab === 'admin_analytics') && (
+                <AdminDashboard currentTab={currentTab} />
+              )}
 
-          {/* 4. NGO Hub */}
-          {currentTab === 'ngo_marketplace' && (
-            <NGOMarketplace />
-          )}
+              {/* 4. NGO Hub */}
+              {currentTab === 'ngo_marketplace' && (
+                <NGOMarketplace />
+              )}
 
-          {/* 5. Public Community Live Feed */}
-          {currentTab === 'community_feed' && (
+              {/* 5. Public Community Live Feed */}
+              {currentTab === 'community_feed' && (
             <div className="space-y-4">
               <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -225,16 +231,20 @@ function AppContent() {
               </div>
             </div>
           )}
+            </>
+          )}
         </main>
       </div>
 
       {/* Mobile-First Bottom Navigation Bar */}
-      <BottomNav
-        currentTab={currentTab}
-        setCurrentTab={handleSetCurrentTab}
-        onOpenCommunityModal={() => setShowCommunityModal(true)}
-        onOpenNewComplaint={handleOpenNewComplaint}
-      />
+      {isAuthenticated && (
+        <BottomNav
+          currentTab={currentTab}
+          setCurrentTab={handleSetCurrentTab}
+          onOpenCommunityModal={() => setShowCommunityModal(true)}
+          onOpenNewComplaint={handleOpenNewComplaint}
+        />
+      )}
 
       {/* Community Creation & Switcher Modal */}
       {showCommunityModal && (
