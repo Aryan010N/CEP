@@ -386,7 +386,7 @@ export const subscribeChallenges = (onUpdate, onError) => {
 export const createTicketInFirestore = async (ticket) => {
   if (!db) return ticket;
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = import.meta.env.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
   try {
     const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
       method: 'POST',

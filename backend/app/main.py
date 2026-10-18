@@ -11,7 +11,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,https://cep-seven.vercel.app")
+ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 # Enable CORS for frontend clients
 app.add_middleware(
@@ -45,7 +46,7 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "gemini_engine": "Active (Google Gemini 1.5 Flash)" if (GEMINI_API_KEY and gemini_model) else "Heuristic Fallback Engine"
+        "gemini_engine": "Active (Google Gemini 3.8 Flash)" if (GEMINI_API_KEY and gemini_model) else "Heuristic Fallback Engine"
     }
 
 if __name__ == "__main__":
