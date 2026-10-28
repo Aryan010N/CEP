@@ -76,13 +76,13 @@ npm run dev
 
 ### ❓ Question 1: "Your app just takes complaints. Who actually solves the problem? Who takes responsibility?"
 > **Your Defense:**
-> *"The platform is an **accountability and visibility pipeline**. Currently, complaints get lost in WhatsApp chats without ownership. Our system assigns strict ownership: the Floor Captain / Wing Rep is accountable for acknowledging and verifying within hours, and once escalated, the public visibility on the dashboard ensures the Society Secretary / Warden acts quickly. We solve the administrative tracking bottleneck that causes delayed physical repairs."*
+> *"The platform is an **accountability and visibility pipeline**. Currently, complaints get lost in WhatsApp chats without ownership. Our system assigns strict ownership: the Floor Captain / Wing Rep is accountable for acknowledging and verifying within hours, and once escalated, the public visibility on the dashboard ensures the Estate Admin / Authority acts quickly. We solve the administrative tracking bottleneck that causes delayed physical repairs."*
 
 ---
 
 ### ❓ Question 2: "How does this work for different types of communities (hostels vs societies vs RWAs)?"
 > **Your Defense:**
-> *"Our platform features a **Custom Nomenclature Engine**. When a community registers, they define their own hierarchy: a hostel can use `Student $\rightarrow$ Wing Rep $\rightarrow$ Warden`, while a luxury society can use `Flat Owner $\rightarrow$ Floor Captain $\rightarrow$ Society Secretary`. The entire data schema and UI adapt seamlessly."*
+> *"Our platform features a **Custom Nomenclature Engine**. When a community registers, they define their own hierarchy: a hostel can use `Student $\rightarrow$ Wing Rep $\rightarrow$ Estate Admin`, while a luxury society can use `Flat Owner $\rightarrow$ Floor Captain $\rightarrow$ Society Secretary`. The entire data schema and UI adapt seamlessly."*
 
 ---
 

@@ -1,152 +1,185 @@
-# CEP - AI Community Digital Problem Observatory 🛡️
+# AI Community Digital Problem Observatory 🛡️
 > **Community Engagement Project (CEP) Platform**  
-> Centralized, intelligent complaint tracking, automated Gemini AI categorization & deduplication, multi-community hierarchy customizer, photo evidence attachments, and NGO problem-solving marketplace.
+> Centralized, intelligent civic problem reporting, automated Gemini AI categorization & deduplication, multi-community hierarchy customization, 30s authority SMS alerts, photo evidence attachments, and NGO challenge marketplace with CEP credit gamification.
+
+[![Live Production](https://img.shields.io/badge/Production%20App-https%3A%2F%2Fcep--seven.vercel.app%2F-indigo?style=for-the-badge&logo=vercel)](https://cep-seven.vercel.app/)
+[![Live Demo Environment](https://img.shields.io/badge/Isolated%20Demo-https%3A%2F%2Fcep--seven.vercel.app%2Fdemo-amber?style=for-the-badge&logo=google-chrome)](https://cep-seven.vercel.app/demo)
+[![Firebase Console](https://img.shields.io/badge/Firebase%20Console-cep--ai-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/u/0/project/cep-ai/overview)
 
 ---
 
-## 🌟 Overview & Architecture
+## 🌟 Overview
 
-The **AI Community Digital Problem Observatory** replaces chaotic WhatsApp groups and paper registers in colleges, hostels, and residential societies with an intelligent, accountable pipeline.
+The **AI Community Digital Problem Observatory** replaces chaotic WhatsApp groups, lost verbal complaints, and paper registers in hostels, residential housing societies, and university campuses with an intelligent, transparent, and accountable pipeline.
+
+It bridges residents, wing representatives, estate administrators, and local NGOs into a structured problem-to-resolution lifecycle powered by **Google Gemini AI** and **Firebase Cloud Firestore**.
+
+---
+
+## 🔄 End-to-End Problem Lifecycle Workflow
 
 ```mermaid
-graph TD
-    A[1. Resident / Student] -->|Natural Language Complaint| B[Gemini AI Engine]
-    B -->|Categorize, Score Urgency, Check Duplicates| C[Designated Wing Representative]
-    C -->|Sanity Check: Verify & Escalate| D[Estate Warden / Chief Admin]
-    D -->|Dispatch Workforce: Electrician / Plumber| E[Resolution & Public Visibility]
-    F[Partner NGOs] -->|Upload Digital Challenges| G[NGO Problem Marketplace]
-    G -->|Claim Project for CEP Credits| A
+sequenceDiagram
+    autonumber
+    actor Resident as 1. Resident / Student
+    participant AI as Gemini AI Engine
+    actor WingRep as 2. Wing Representative
+    actor Admin as 3. Estate Admin
+    participant Notif as SMS & Email Gateway
+    actor NGO as 4. NGO Partner
+
+    Resident->>AI: Submits Complaint (Text, Location, Photo)
+    AI-->>Resident: Auto-Categorizes (Electrical/Plumbing/Sanitation/General) & Deduplicates
+    Resident->>WingRep: Ticket Routed to Wing Rep Queue
+    WingRep->>WingRep: Sanity Check (Filters spam / duplicates)
+    WingRep->>Admin: Verifies & Escalates Ticket
+    WingRep->>Notif: Triggers Automated SMS Alert to Estate Admin (<30s)
+    Admin->>Admin: Dispatches Maintenance Workforce & Sets "In Progress"
+    Admin->>Notif: Status Update Email Sent to Resident
+    Admin->>Resident: Resolves Ticket (+20 CEP Credits Awarded)
+    NGO->>Resident: Posts Community Challenge on Marketplace
+    Resident->>NGO: Claims Challenge & Submits Solution (+300 CEP Credits)
 ```
 
-### Key Role-Based Personas:
+### The 4 Standardized System Personas:
 1. **Resident / Student (Indigo Identity):**
-   - Natural language complaint submission in any language.
+   - Submit natural language complaints with photo evidence and location.
    - Real-time Gemini AI preview (Category: Electrical, Plumbing, Sanitation, General; Urgency: Low, Medium, High).
-   - Automated deduplication detection to prevent spamming.
-   - Interactive tracking of personal complaints.
+   - Automated semantic deduplication gate preventing duplicate submissions.
+   - Upvote active community complaints to boost maintenance priority.
+   - Claim NGO challenges to earn academic CEP credits.
 2. **Wing Representative (Emerald Identity):**
-   - Filtered strictly to their assigned wing (e.g. Wing A).
+   - Filtered strictly to their assigned division/wing (e.g., Wing A).
    - Local sanity check: "Verify & Escalate" or "Flag as Spam / Reject".
-3. **Estate Warden / Admin (Purple Identity):**
-   - Aggregated cross-wing feed of verified tickets.
-   - Workforce assignment (dispatch technicians and update progress).
-   - Gemini AI executive management briefing summarizing community infrastructural health.
+   - Automated 30s SMS alert dispatched to Estate Admin upon verification.
+   - Dynamic honor badges ("Wing Leader", "Master Verifier").
+3. **Estate Admin (Purple Identity):**
+   *(Standardized across code, UI, and documentation; formerly referred to as Chief Warden in hostel settings)*
+   - Aggregated cross-wing verified ticket register.
+   - Maintenance workforce dispatch (assign technician crews, track progress).
+   - Gemini AI executive management briefing summarizing community health and action items.
 4. **NGO Partner (Teal Identity):**
-   - Problem statement marketplace where NGOs post operational bottlenecks.
-   - Engineering students claim challenges to build software/hardware solutions.
+   - Marketplace for publishing operational challenges (IoT monitoring, waste audits, rural education).
+   - Review and accept student project submissions for social impact certification and CEP credits.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🔒 Demo vs. Production Separation Architecture
 
-### 1. Prerequisites
-- **Node.js**: v18+ (tested on Node v24)
-- **Python**: v3.10+ (tested on Python 3.14)
+To guarantee absolute data integrity, the **Production Application** and the **Demonstration Environment** operate on distinct routes with strictly isolated datastores:
 
----
-
-### 2. Backend Setup (FastAPI + Google Gemini)
-
-```bash
-cd backend
-
-# Create virtual environment (optional)
-python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On Linux/macOS:
-# source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# (Optional) Add your Google Gemini API Key in .env
-# If left blank, the built-in intelligent heuristic engine takes over automatically
-echo GEMINI_API_KEY=your_gemini_api_key_here > .env
-
-# Start FastAPI server
-uvicorn app.main:app --reload --port 8000
-```
-API Documentation will be live at: `http://localhost:8000/docs`
+| Parameter | Production Application (`/` or `/app`) | Demo Environment (`/demo`) |
+|---|---|---|
+| **Route Endpoint** | `https://cep-seven.vercel.app/` | `https://cep-seven.vercel.app/demo` |
+| **Data Isolation** | Real Cloud Firestore collections: `tickets`, `communities`, `users`, `challenges` | Isolated collections: `demo_tickets`, `demo_communities`, `demo_challenges`, `demo_users` |
+| **Authentication** | Real Firebase Auth user accounts only | Seeded 1-Click Evaluation Personas + Demo Accounts |
+| **Write Protection** | Firestore Security Rules strictly block demo writes from modifying real data | Isolated to `demo_*` collections; zero production pollution |
+| **Persona Switcher** | Hidden (real user profiles only) | Visible top evaluation toolbar (`1. Resident`, `2. Wing Rep`, `3. Estate Admin`, `4. NGO`) |
 
 ---
 
-### 3. Frontend Setup (React + Vite + Tailwind CSS)
+## 📊 Cloud Firestore Schema Reference
 
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start Vite development server
-npm run dev
-```
-Open your browser at: `http://localhost:5173`
-
----
-
-## 🧭 Live Demo & 1-Click Role Switcher
-
-For assessment presentations and teacher grading, the top navigation bar features a **1-Click Evaluation Persona Switcher**:
-- Click **"1. Resident"** -> Log in as *Aarav Sharma (Resident, Wing A)*
-- Click **"2. Wing Rep (A)"** -> Log in as *Vikram Malhotra (Wing A Representative)*
-- Click **"3. Estate Admin"** -> Log in as *Dr. Rajesh Iyer (Chief Warden & Estate Manager)*
-- Click **"4. NGO Connect"** -> Log in as *Anita Deshmukh (GreenTech NGO Lead)*
-
----
-
-## 📂 Repository Structure
-
-```
-c:/CEP/
-├── .agents/
-│   └── skills/
-│       └── sprint-2-firestore/   # Workspace skill auto-discovery
-│           └── SKILL.md
-├── frontend/
-│   ├── src/
-│   │   ├── components/           # Navbar, Sidebar, TicketCard, StatusBadge, Modal, AIAnalysisModal, StatsCard, QRCodeModal
-│   │   ├── context/              # AuthContext.jsx, CommunityContext.jsx
-│   │   ├── pages/                # Login, Register, ResidentDashboard, WingRepDashboard, AdminDashboard, NGOMarketplace
-│   │   ├── services/             # firebase.js (modular v10+), api.js
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.js
-├── backend/
-│   ├── app/
-│   │   ├── api/                  # tickets.py (analyze, deduplicate), reports.py (AI executive summary)
-│   │   ├── models/               # Pydantic schemas
-│   │   ├── services/             # gemini_service.py (Gemini 1.5 Flash + fallback)
-│   │   └── main.py               # FastAPI entrypoint with CORS
-│   └── requirements.txt
-├── .mcp.json                     # MCP Toolchain configuration
-├── SKILL.md                      # Sprint 2 Firestore & Tooling Operational Playbook
-├── MASTER_PROJECT_ROADMAP.md     # Phase and Sprint breakdown with PR templates
-├── IMPLEMENTATION_FACTORS.md     # Technical factors, schemas, and architecture guide
-├── TEACHER_ASSESSMENT_GUIDE.md   # Complete defense script, evaluation rubric, and next steps
-└── README.md
+### 1. `users/{uid}`
+```typescript
+interface UserDocument {
+  email: string;              // "aarav@campus.edu"
+  displayName: string;        // "Aarav Sharma"
+  role: "resident" | "wing_rep" | "admin" | "ngo";
+  communityId: string;       // "comm_emerald_1"
+  community_id: string;      // Normalized legacy alias
+  wing: string;              // "Wing A"
+  room_number: string;       // "A-304"
+  phone: string;             // "+91 98765 43210"
+  cepCredits: number;        // Gamification points balance (e.g. 450)
+  createdAt: string;         // ISO-8601 timestamp
+}
 ```
 
+### 2. `tickets/{ticketId}`
+```typescript
+interface TicketDocument {
+  ticket_id: string;         // "TICK-8021"
+  title: string;             // "Main corridor ceiling fan sparking"
+  description: string;       // Detailed problem statement
+  category: "Electrical" | "Plumbing" | "Sanitation" | "General";
+  urgency: "Low" | "Medium" | "High";
+  status: "Submitted" | "Verified_By_Rep" | "Assigned" | "In_Progress" | "Resolved" | "Rejected";
+  resident_id: string;       // Submitter UID
+  resident_name: string;     // Submitter display name
+  community_id: string;      // "comm_emerald_1"
+  wing: string;              // "Wing A"
+  room_number: string;       // "A-304"
+  image_url: string | null;  // Photo evidence URL or data preset
+  upvotes: number;           // Community urgency validation counter
+  upvoted_by: string[];      // Array of resident UIDs who validated the issue
+  verified_by: string | null;// "Vikram Malhotra (Wing Rep)"
+  assigned_worker: string | null; // e.g., "Apex Electricals"
+  ai_summary: string;        // Objective 1-2 sentence AI defect summary
+  suggested_action: string;  // Concrete recommendation from Gemini AI
+  server_created_at: Timestamp;
+  server_updated_at: Timestamp;
+}
+```
+
+### 3. `communities/{communityId}`
+```typescript
+interface CommunityDocument {
+  community_id: string;      // "comm_emerald_1"
+  name: string;              // "Emerald Heights Campus Hostel"
+  type: "hostel" | "housing_society" | "rwa_colony" | "ngo_hub" | "custom";
+  city: string;              // "Bengaluru"
+  wings: string[];           // ["Wing A", "Wing B", "Wing C", "Wing D"]
+  admin_uid: string;         // UID of the Estate Admin
+  nomenclature: {
+    reporter_label: string;  // "Resident / Student"
+    verifier_label: string;  // "Wing Representative"
+    authority_label: string; // "Estate Admin"
+    division_label: string;  // "Wing"
+  };
+  members: Array<{ uid: string; name: string; role: string }>;
+  created_at: string;
+}
+```
+
+### 4. `challenges/{challengeId}`
+```typescript
+interface ChallengeDocument {
+  challenge_id: string;      // "NGO-CH-101"
+  ngo_name: string;          // "CleanCity & EcoGreen NGO"
+  title: string;             // "AI Image Model for Waste Auditing"
+  description: string;       // Operational bottleneck description
+  skills_required: string[]; // ["React", "Python", "Computer Vision"]
+  status: "Open" | "Claimed" | "In_Review" | "Closed";
+  claimed_by_user_id: string | null;
+  claimed_by_user_name: string | null;
+  contact_email: string;     // NGO contact bridge
+  reward: string;            // "Certificate + 300 CEP Credits"
+  created_at: string;
+}
+```
+
 ---
 
-## ⚡ Sprint 2: Cloud Firestore & Agent Tooling Framework
+## 🎯 Pitch Deck Feature Implementation Audit
 
-During Sprint 2, the CEP data layer migrates from `localStorage` to **Google Cloud Firestore v10+** with real-time syncing. All operations strictly adhere to the operational directives in [`SKILL.md`](./SKILL.md).
-
-### Integrated Agent Toolchain (`.mcp.json`)
-- **Context7 MCP:** Enforces version-specific verification of `@firebase/firestore` v10+ modular APIs and React 18 Context API before writing any database queries or mutations, completely eliminating deprecated v8/compat syntax.
-- **DesignRevision & Anima MCP:** Extracts production-grade, accessible, mobile-first Tailwind CSS components matching our glassmorphism design system rather than writing generic markup.
-- **Google Stitch:** Gemini-powered engine converting structured text prompts and sketches directly into high-fidelity HTML/CSS screens.
-- **motion.dev:** Enforces physics-based spring transitions (`type: "spring", stiffness: 350, damping: 25`) with compositor-only properties (`transform`, `opacity`) under strict anti-slop guidelines.
-- **Manus:** Subagent delegation workflow for routine component boilerplate, mock data generators, and test skeletons under architect review gates.
-- **Playwright MCP:** Multi-session headless browser testing loop verifying that Firestore `onSnapshot` updates dynamically update the DOM across concurrent Resident and Admin sessions without page reload.
+| Pitch Deck Feature | Status | Implementation Details |
+|---|---|---|
+| **AI Classification** | **Implemented** | Gemini 3.8 Flash via FastAPI `POST /api/tickets/analyze` with intelligent regex fallback. |
+| **Urgency Scoring** | **Implemented** | Tri-level priority (`Low`, `Medium`, `High`) derived from incident severity cues. |
+| **Semantic Deduplication** | **Implemented** | Gemini semantic embedding similarity via `POST /api/tickets/deduplicate`. Verified blocking gate before Firestore write. |
+| **SMS Alerts (<30s)** | **Implemented** | Twilio integration (`/api/notifications/sms`) with guaranteed sub-30s simulated dispatch logging for authority alerts on Wing Rep verification. |
+| **Email Verification & Alerts** | **Implemented** | Resend email dispatch (`/api/notifications/email`) on status progression (`In_Progress`, `Resolved`). |
+| **NGO Challenge Marketplace** | **Implemented** | Dedicated board for posting, filtering, claiming, and tracking social impact problems. |
+| **QR-Code Onboarding** | **Implemented** | Dynamic printable QR codes for community joining (`/?action=join&community=...`) and location-specific complaint spots. |
+| **Gamification & Scoreboard** | **Implemented** | Honor Roll leaderboard tracking CEP credits, student contributions, and wing resolution velocity. |
+| **Community Upvotes** | **Implemented** | Community validation button on `TicketCard.jsx` with persistent Firestore counters. |
+| **Wing Rep Badges** | **Implemented** | Dynamic honor badges ("Wing Leader", "Master Verifier") awarded on verification milestones. |
 
 ---
 
-## 🛡️ Assessment & Defense Matrix
+## 📚 Documentation Reference
 
-See [`TEACHER_ASSESSMENT_GUIDE.md`](./TEACHER_ASSESSMENT_GUIDE.md) for the exact 5-minute presentation script and answers to judge counter-questions on **Accountability**, **WhatsApp/SMS Alert Triggers**, and **Spam Prevention**.
+- **[SETUP.md](./SETUP.md):** Complete local setup, environment variables, Docker instructions, and Playwright automated testing.
+- **[ARCHITECTURE.md](./ARCHITECTURE.md):** Deep-dive system architecture, notification event pipeline, and security model.
+- **[TEACHER_ASSESSMENT_GUIDE.md](./TEACHER_ASSESSMENT_GUIDE.md):** Oral viva defense matrix, rubric alignment, and evaluation guide.
