@@ -9,12 +9,14 @@ import {
   subscribeChallenges,
   createTicketInFirestore,
   updateTicketInFirestore,
+  upvoteTicketInFirestore,
   createCommunityInFirestore,
   joinCommunityInFirestore,
   claimChallengeInFirestore,
   postChallengeInFirestore,
   isFirestoreConfigured
 } from '../services/firebase';
+import { dispatchVerificationSMS, dispatchStatusEmail } from '../services/notifications';
 
 const CommunityContext = createContext();
 
@@ -25,9 +27,12 @@ export function useCommunity() {
 export function CommunityProvider({ children }) {
   const { currentUser, isDemoMode } = useAuth();
 
+  // Storage key prefix isolated by environment
+  const storePrefix = isDemoMode ? 'cep_demo_' : 'cep_prod_';
+
   // Communities list state
   const [communities, setCommunities] = useState(() => {
-    const saved = localStorage.getItem('cep_communities_v3');
+    const saved = localStorage.getItem(`${storePrefix}communities_v4`);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -39,13 +44,13 @@ export function CommunityProvider({ children }) {
   });
 
   const [activeCommunityId, setActiveCommunityId] = useState(() => {
-    const saved = localStorage.getItem('cep_active_community_id_v3');
+    const saved = localStorage.getItem(`${storePrefix}active_community_id_v4`);
     return saved || communities[0]?.community_id || 'comm_emerald_1';
   });
 
   // Tickets state
   const [tickets, setTickets] = useState(() => {
-    const saved = localStorage.getItem('cep_tickets_v3');
+    const saved = localStorage.getItem(`${storePrefix}tickets_v4`);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -58,7 +63,7 @@ export function CommunityProvider({ children }) {
 
   // NGO Challenges state
   const [challenges, setChallenges] = useState(() => {
-    const saved = localStorage.getItem('cep_challenges_v3');
+    const saved = localStorage.getItem(`${storePrefix}challenges_v4`);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -72,22 +77,22 @@ export function CommunityProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [isLiveSyncActive, setIsLiveSyncActive] = useState(false);
 
-  // Backup cache in localStorage
+  // Backup cache in environment-isolated localStorage
   useEffect(() => {
-    localStorage.setItem('cep_communities_v3', JSON.stringify(communities));
-  }, [communities]);
+    localStorage.setItem(`${storePrefix}communities_v4`, JSON.stringify(communities));
+  }, [communities, storePrefix]);
 
   useEffect(() => {
-    localStorage.setItem('cep_active_community_id_v3', activeCommunityId);
-  }, [activeCommunityId]);
+    localStorage.setItem(`${storePrefix}active_community_id_v4`, activeCommunityId);
+  }, [activeCommunityId, storePrefix]);
 
   useEffect(() => {
-    localStorage.setItem('cep_tickets_v3', JSON.stringify(tickets));
-  }, [tickets]);
+    localStorage.setItem(`${storePrefix}tickets_v4`, JSON.stringify(tickets));
+  }, [tickets, storePrefix]);
 
   useEffect(() => {
-    localStorage.setItem('cep_challenges_v3', JSON.stringify(challenges));
-  }, [challenges]);
+    localStorage.setItem(`${storePrefix}challenges_v4`, JSON.stringify(challenges));
+  }, [challenges, storePrefix]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type, id: Date.now() });
@@ -98,11 +103,12 @@ export function CommunityProvider({ children }) {
 
   // ==========================================================================
   // REAL-TIME CLOUD FIRESTORE SUBSCRIPTIONS (Strict Unsubscribe Enforcement)
+  // Isolated by Environment (Production vs Demo collections)
   // ==========================================================================
 
   // 1. Subscribe to Communities collection
   useEffect(() => {
-    if (!isFirestoreConfigured() && isDemoMode) {
+    if (!isFirestoreConfigured()) {
       return;
     }
 
@@ -114,11 +120,11 @@ export function CommunityProvider({ children }) {
         }
       },
       (error) => {
-        console.info("Operating in local demo mode fallback for communities.", error?.message);
-      }
+        console.info(`Operating with cached data for communities (${isDemoMode ? 'demo' : 'prod'}):`, error?.message);
+      },
+      isDemoMode
     );
 
-    // STRICT LIFECYCLE RULE: Unsubscribe on unmount to prevent memory leaks
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
@@ -128,11 +134,7 @@ export function CommunityProvider({ children }) {
 
   // 2. Subscribe to Tickets for the active community
   useEffect(() => {
-    if (!activeCommunityId) {
-      return;
-    }
-
-    if (!isFirestoreConfigured() && isDemoMode) {
+    if (!activeCommunityId || !isFirestoreConfigured()) {
       return;
     }
 
@@ -145,11 +147,11 @@ export function CommunityProvider({ children }) {
         }
       },
       (error) => {
-        console.info("Operating in local demo mode fallback for tickets.", error?.message);
-      }
+        console.info(`Operating with cached data for tickets (${isDemoMode ? 'demo' : 'prod'}):`, error?.message);
+      },
+      isDemoMode
     );
 
-    // STRICT LIFECYCLE RULE: Unsubscribe on unmount or when activeCommunityId changes
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
@@ -159,7 +161,7 @@ export function CommunityProvider({ children }) {
 
   // 3. Subscribe to NGO Challenges collection
   useEffect(() => {
-    if (!isFirestoreConfigured() && isDemoMode) {
+    if (!isFirestoreConfigured()) {
       return;
     }
 
@@ -171,11 +173,11 @@ export function CommunityProvider({ children }) {
         }
       },
       (error) => {
-        console.info("Operating in local demo mode fallback for challenges.", error?.message);
-      }
+        console.info(`Operating with cached data for challenges (${isDemoMode ? 'demo' : 'prod'}):`, error?.message);
+      },
+      isDemoMode
     );
 
-    // STRICT LIFECYCLE RULE: Unsubscribe on unmount
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
@@ -204,7 +206,7 @@ export function CommunityProvider({ children }) {
     return comm?.nomenclature || {
       reporter_label: "Resident",
       verifier_label: "Wing Representative",
-      authority_label: "Warden / Admin",
+      authority_label: "Estate Admin",
       division_label: "Wing"
     };
   };
@@ -253,9 +255,9 @@ export function CommunityProvider({ children }) {
     setActiveCommunityId(communityId);
     showToast(`Successfully joined "${community.name}"! 🎉`, "success");
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await joinCommunityInFirestore(communityId, newMember);
+      await joinCommunityInFirestore(communityId, newMember, isDemoMode);
     } catch (err) {
       console.warn("Firestore joinCommunity sync notice:", err.message);
     }
@@ -280,17 +282,17 @@ export function CommunityProvider({ children }) {
   // Register / Add a Brand New Community
   const createCommunity = async ({ name, type, city, wings, nomenclature }) => {
     const defaultNomByType = {
-      hostel: { reporter_label: "Student", verifier_label: "Floor Captain", authority_label: "Chief Warden", division_label: "Wing" },
-      housing_society: { reporter_label: "Flat Owner", verifier_label: "Floor Lead", authority_label: "Society Secretary", division_label: "Tower" },
-      rwa_colony: { reporter_label: "Homeowner", verifier_label: "Block Coordinator", authority_label: "RWA President", division_label: "Block" },
+      hostel: { reporter_label: "Student", verifier_label: "Floor Captain", authority_label: "Estate Admin", division_label: "Wing" },
+      housing_society: { reporter_label: "Flat Owner", verifier_label: "Floor Lead", authority_label: "Estate Admin", division_label: "Tower" },
+      rwa_colony: { reporter_label: "Homeowner", verifier_label: "Block Coordinator", authority_label: "Estate Admin", division_label: "Block" },
       ngo_hub: { reporter_label: "Community Member", verifier_label: "Field Rep", authority_label: "Program Director", division_label: "Sector" },
-      custom: { reporter_label: "Member", verifier_label: "Representative", authority_label: "Administrator", division_label: "Unit" }
+      custom: { reporter_label: "Member", verifier_label: "Representative", authority_label: "Estate Admin", division_label: "Unit" }
     };
 
     const assignedNom = {
       reporter_label: nomenclature?.reporter_label?.trim() || defaultNomByType[type]?.reporter_label || "Resident",
       verifier_label: nomenclature?.verifier_label?.trim() || defaultNomByType[type]?.verifier_label || "Representative",
-      authority_label: nomenclature?.authority_label?.trim() || defaultNomByType[type]?.authority_label || "Administrator",
+      authority_label: nomenclature?.authority_label?.trim() || defaultNomByType[type]?.authority_label || "Estate Admin",
       division_label: nomenclature?.division_label?.trim() || defaultNomByType[type]?.division_label || "Wing"
     };
 
@@ -320,9 +322,9 @@ export function CommunityProvider({ children }) {
     setActiveCommunityId(newCommunity.community_id);
     showToast(`Community "${newCommunity.name}" created & set as active!`, "success");
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await createCommunityInFirestore(newCommunity);
+      await createCommunityInFirestore(newCommunity, isDemoMode);
     } catch (err) {
       console.warn("Firestore createCommunity sync notice:", err.message);
     }
@@ -347,6 +349,8 @@ export function CommunityProvider({ children }) {
       wing: ticketData.wing || (activeCommunity?.wings?.[0] || "Section 1"),
       room_number: ticketData.room_number || "Unit 101",
       image_url: ticketData.image_url || null,
+      upvotes: 0,
+      upvoted_by: [],
       created_at: new Date().toISOString(),
       verified_by: null,
       assigned_worker: null,
@@ -358,9 +362,10 @@ export function CommunityProvider({ children }) {
     setTickets(prev => [newTicket, ...prev]);
     showToast(`Complaint #${newTicket.ticket_id} submitted & routed to ${currentNom.verifier_label}!`, "success");
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync with active community deduplication gate
     try {
-      await createTicketInFirestore(newTicket);
+      const activeTickets = tickets.filter(t => t.community_id === newTicket.community_id && t.status !== 'Resolved');
+      await createTicketInFirestore(newTicket, activeTickets, isDemoMode);
     } catch (err) {
       console.warn("Firestore submitTicket sync notice:", err.message);
     }
@@ -368,7 +373,35 @@ export function CommunityProvider({ children }) {
     return newTicket;
   };
 
-  // Verifier action: Verify & Escalate or Reject
+  // Upvote an existing ticket (Community Validation & Urgency Booster)
+  const upvoteTicket = async (ticketId) => {
+    const userId = currentUser?.uid || "anonymous_resident";
+
+    // Optimistic Update
+    setTickets(prev => prev.map(t => {
+      if (t.ticket_id === ticketId) {
+        const upvotedBy = t.upvoted_by || [];
+        if (!upvotedBy.includes(userId)) {
+          return {
+            ...t,
+            upvotes: (t.upvotes || 0) + 1,
+            upvoted_by: [...upvotedBy, userId]
+          };
+        }
+      }
+      return t;
+    }));
+
+    showToast("Ticket upvoted! Priority boosted for maintenance dispatch.", "info");
+
+    try {
+      await upvoteTicketInFirestore(ticketId, userId, isDemoMode);
+    } catch (err) {
+      console.warn("Firestore upvoteTicket notice:", err.message);
+    }
+  };
+
+  // Verifier action: Verify & Escalate or Reject + Automated 30s SMS Alert
   const updateTicketByRep = async (ticketId, isApproved, verifierName, notes = "") => {
     const currentNom = getNomenclature();
     const updateData = {
@@ -377,6 +410,8 @@ export function CommunityProvider({ children }) {
       rep_notes: notes,
       verified_at: new Date().toISOString()
     };
+
+    const targetTicket = tickets.find(t => t.ticket_id === ticketId);
 
     // Optimistic Update
     setTickets(prev => prev.map(t => {
@@ -387,20 +422,33 @@ export function CommunityProvider({ children }) {
     }));
 
     if (isApproved) {
-      showToast(`Ticket #${ticketId} verified & escalated to ${currentNom.authority_label}!`, "success");
+      showToast(`Ticket #${ticketId} verified! SMS alert dispatched to ${currentNom.authority_label} within 30s.`, "success");
+      
+      // Dispatch automated SMS to authority within 30s
+      dispatchVerificationSMS({
+        toPhone: '+91 98765 99999',
+        ticketId: ticketId,
+        title: targetTicket?.title || "Community Maintenance Alert",
+        wing: targetTicket?.wing || "General Wing",
+        verifierName: verifierName || "Wing Representative",
+        urgency: targetTicket?.urgency || "High"
+      }).then(res => {
+        console.log("SMS notification dispatched:", res);
+      });
+
     } else {
       showToast(`Ticket #${ticketId} marked as spam / rejected.`, "warning");
     }
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await updateTicketInFirestore(ticketId, updateData);
+      await updateTicketInFirestore(ticketId, updateData, isDemoMode);
     } catch (err) {
       console.warn("Firestore updateTicketByRep sync notice:", err.message);
     }
   };
 
-  // Admin / Authority action: Assign worker, move status, complete resolution
+  // Admin / Authority action: Assign worker, move status, complete resolution + Email Notification
   const updateTicketByAdmin = async (ticketId, { status, assigned_worker, admin_notes }) => {
     const updateData = {
       status: status || undefined,
@@ -411,6 +459,8 @@ export function CommunityProvider({ children }) {
 
     // Remove undefined
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    const targetTicket = tickets.find(t => t.ticket_id === ticketId);
 
     // Optimistic Update
     setTickets(prev => prev.map(t => {
@@ -430,9 +480,23 @@ export function CommunityProvider({ children }) {
 
     showToast(`Ticket #${ticketId} updated: ${statusLabels[status] || status}`, "success");
 
-    // Async Cloud Firestore Sync
+    // Dispatch status update email notification
+    if (status === 'Resolved' || status === 'In_Progress' || status === 'Assigned') {
+      dispatchStatusEmail({
+        toEmail: 'resident@campus.edu',
+        ticketId: ticketId,
+        title: targetTicket?.title || "Problem Report",
+        status: statusLabels[status] || status,
+        assignedWorker: assigned_worker,
+        notes: admin_notes
+      }).then(res => {
+        console.log("Status update email dispatched:", res);
+      });
+    }
+
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await updateTicketInFirestore(ticketId, updateData);
+      await updateTicketInFirestore(ticketId, updateData, isDemoMode);
     } catch (err) {
       console.warn("Firestore updateTicketByAdmin sync notice:", err.message);
     }
@@ -454,11 +518,11 @@ export function CommunityProvider({ children }) {
       return c;
     }));
 
-    showToast(`Challenge claimed! Project coordinator notified.`, "success");
+    showToast(`Challenge claimed! Project coordinator notified via email bridge.`, "success");
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await claimChallengeInFirestore(challengeId, studentUserId, studentName);
+      await claimChallengeInFirestore(challengeId, studentUserId, studentName, isDemoMode);
     } catch (err) {
       console.warn("Firestore claimNGOChallenge sync notice:", err.message);
     }
@@ -478,7 +542,7 @@ export function CommunityProvider({ children }) {
       claimed_by_user_id: null,
       claimed_by_user_name: null,
       contact_email: challengeData.contact_email,
-      reward: challengeData.reward || "Social Impact Certificate",
+      reward: challengeData.reward || "Certificate & 300 CEP Credits",
       created_at: new Date().toISOString()
     };
 
@@ -486,9 +550,9 @@ export function CommunityProvider({ children }) {
     setChallenges(prev => [newChallenge, ...prev]);
     showToast(`NGO Challenge "${newChallenge.title}" published!`, "success");
 
-    // Async Cloud Firestore Sync
+    // Async Cloud Firestore Sync (isolated by env)
     try {
-      await postChallengeInFirestore(newChallenge);
+      await postChallengeInFirestore(newChallenge, isDemoMode);
     } catch (err) {
       console.warn("Firestore postNGOChallenge sync notice:", err.message);
     }
@@ -521,6 +585,7 @@ export function CommunityProvider({ children }) {
     toast,
     showToast,
     submitTicket,
+    upvoteTicket,
     updateTicketByRep,
     updateTicketByAdmin,
     claimNGOChallenge,

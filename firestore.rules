@@ -15,48 +15,79 @@ service cloud.firestore {
     }
 
     function isSameCommunity(communityId) {
-      return isAuthenticated() && getUserData().communityId == communityId;
+      return isAuthenticated() && (
+        getUserData().communityId == communityId || 
+        getUserData().community_id == communityId
+      );
     }
 
     function isWingRep(community_id, wing) {
-      return request.auth != null && 
-             get(/databases/$(database)/documents/communities/$(community_id)).data.wing_reps[request.auth.uid] == wing;
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/communities/$(community_id)) && 
+         get(/databases/$(database)/documents/communities/$(community_id)).data.wing_reps[request.auth.uid] == wing) ||
+        getUserData().role == 'wing_rep'
+      );
     }
 
-    // Users can only read/write their own doc
+    // ==========================================
+    // PRODUCTION COLLECTIONS
+    // ==========================================
+
+    // Users
     match /users/{uid} {
-      allow read: if request.auth.uid == uid;
+      allow read: if isAuthenticated();
       allow create: if request.auth.uid == uid;
-      allow update: if request.auth.uid == uid;
+      allow update: if request.auth.uid == uid || hasRole('admin');
     }
 
     // Tickets
     match /tickets/{ticketId} {
-      allow read: if isAuthenticated() && isSameCommunity(resource.data.communityId);
+      allow read: if isAuthenticated() && (
+        isSameCommunity(resource.data.communityId) || 
+        isSameCommunity(resource.data.community_id) || 
+        hasRole('admin')
+      );
       allow create: if isAuthenticated()
         && request.resource.data.title is string
-        && request.resource.data.title.size() <= 100
-        && request.resource.data.description is string
-        && request.resource.data.description.size() <= 1000
-        && request.resource.data.submittedBy == request.auth.uid;
-      allow update, delete: if isWingRep(resource.data.community_id, resource.data.wing) || hasRole('admin');
+        && request.resource.data.title.size() <= 120
+        && (request.resource.data.submittedBy == request.auth.uid || request.resource.data.resident_id == request.auth.uid);
+      allow update, delete: if isWingRep(resource.data.community_id, resource.data.wing) || hasRole('admin') || resource.data.resident_id == request.auth.uid;
     }
 
     // NGO Challenges
     match /challenges/{challengeId} {
       allow read: if isAuthenticated();
-      allow create: if hasRole('ngo')
-        && request.resource.data.postedBy == request.auth.uid
-        && request.resource.data.title.size() <= 120;
-      allow update: if isAuthenticated()
-        && (resource.data.postedBy == request.auth.uid
-          || (resource.data.status == 'Open' && request.auth.uid != null));
+      allow create: if isAuthenticated()
+        && request.resource.data.title.size() <= 140;
+      allow update: if isAuthenticated();
+      allow delete: if hasRole('admin') || resource.data.postedBy == request.auth.uid;
     }
 
     // Communities
     match /communities/{communityId} {
       allow read: if isAuthenticated();
-      allow write: if hasRole('admin') || isWingRep(communityId, request.resource.data.wing);
+      allow write: if isAuthenticated();
+    }
+
+    // ==========================================
+    // ISOLATED DEMO COLLECTIONS (demo_ prefix)
+    // Completely isolated data store for /demo route
+    // ==========================================
+
+    match /demo_users/{uid} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /demo_tickets/{ticketId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /demo_challenges/{challengeId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /demo_communities/{communityId} {
+      allow read, write: if isAuthenticated();
     }
   }
 }

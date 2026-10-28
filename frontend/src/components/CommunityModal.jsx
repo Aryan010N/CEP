@@ -37,7 +37,7 @@ export default function CommunityModal({ isOpen, onClose }) {
     hostel: {
       label: "College / University Hostel",
       defaultWings: "Wing A, Wing B, Wing C, Wing D",
-      nom: { reporter_label: "Student", verifier_label: "Wing Representative", authority_label: "Chief Warden", division_label: "Wing" }
+      nom: { reporter_label: "Student", verifier_label: "Wing Representative", authority_label: "Estate Admin", division_label: "Wing" }
     },
     rwa_colony: {
       label: "Residential Colony / RWA",
@@ -210,7 +210,7 @@ export default function CommunityModal({ isOpen, onClose }) {
                       <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1.5 text-[10px] text-slate-400">
                         <span className="bg-slate-800/80 px-2 py-0.5 rounded">Reporter: <strong className="text-slate-300">{nom.reporter_label || 'Resident'}</strong></span>
                         <span className="bg-slate-800/80 px-2 py-0.5 rounded">Verifier: <strong className="text-emerald-300">{nom.verifier_label || 'Wing Rep'}</strong></span>
-                        <span className="bg-slate-800/80 px-2 py-0.5 rounded">Authority: <strong className="text-purple-300">{nom.authority_label || 'Warden'}</strong></span>
+                        <span className="bg-slate-800/80 px-2 py-0.5 rounded">Authority: <strong className="text-purple-300">{nom.authority_label || 'Estate Admin'}</strong></span>
                       </div>
                     </div>
                   );

@@ -19,13 +19,13 @@ import {
 
 // Firebase configuration from Vite environment variables
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForLocalDevelopmentAndEvaluationMode",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-community-observatory.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ai-community-observatory",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-community-observatory.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1234567890",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1234567890:web:abcdef123456",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyADaXMoJOErpXHThu4ZSx4SKy1eXvCmm34",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "cep-ai.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "cep-ai",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "cep-ai.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "920330565851",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:920330565851:web:c0b0c03c098eff4e8b74fe",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XGHD2EM7JE"
 };
 
 // Initialize Firebase App
@@ -55,7 +55,7 @@ export const SAMPLE_COMPLAINT_IMAGES = {
   sanitation: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' fill='%231e293b'%3E%3Crect width='400' height='300' fill='%230f172a'/%3E%3Cpath d='M140 100 L150 230 L250 230 L260 100 Z' fill='%2315803d' stroke='%23166534' stroke-width='4'/%3E%3Crect x='130' y='80' width='140' height='20' rx='4' fill='%23166534'/%3E%3Ccircle cx='180' cy='65' r='10' fill='%23ca8a04' opacity='0.7'/%3E%3Ccircle cx='220' cy='55' r='12' fill='%23ca8a04' opacity='0.8'/%3E%3Ctext x='200' y='275' font-family='sans-serif' font-size='14' font-weight='bold' fill='%2394a3b8' text-anchor='middle'%3EOverflowing Waste Bin%3C/text%3E%3C/svg%3E"
 };
 
-// Initial Pre-Seeded Communities with Customizable Nomenclature
+// Initial Pre-Seeded Communities with Reconciled "Estate Admin" Nomenclature
 export const INITIAL_DEMO_COMMUNITIES = [
   {
     community_id: "comm_emerald_1",
@@ -67,7 +67,7 @@ export const INITIAL_DEMO_COMMUNITIES = [
     nomenclature: {
       reporter_label: "Student / Resident",
       verifier_label: "Wing Representative",
-      authority_label: "Chief Warden",
+      authority_label: "Estate Admin",
       division_label: "Wing"
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString()
@@ -82,7 +82,7 @@ export const INITIAL_DEMO_COMMUNITIES = [
     nomenclature: {
       reporter_label: "Resident / Flat Owner",
       verifier_label: "Floor Captain",
-      authority_label: "Society Secretary",
+      authority_label: "Estate Admin",
       division_label: "Tower"
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString()
@@ -97,14 +97,14 @@ export const INITIAL_DEMO_COMMUNITIES = [
     nomenclature: {
       reporter_label: "Homeowner",
       verifier_label: "Block Coordinator",
-      authority_label: "RWA President",
+      authority_label: "Estate Admin",
       division_label: "Block"
     },
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString()
   }
 ];
 
-// Initial Pre-Seeded Demonstration Users
+// Initial Demonstration Users
 export const INITIAL_DEMO_USERS = [
   {
     uid: "usr_resident_1",
@@ -172,6 +172,8 @@ export const INITIAL_DEMO_TICKETS = [
     wing: "Wing A",
     room_number: "A-304",
     image_url: SAMPLE_COMPLAINT_IMAGES.electrical,
+    upvotes: 4,
+    upvoted_by: ["usr_resident_2", "usr_wingrep_1"],
     created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     verified_by: null,
     assigned_worker: null,
@@ -191,6 +193,8 @@ export const INITIAL_DEMO_TICKETS = [
     wing: "Wing A",
     room_number: "A-210",
     image_url: SAMPLE_COMPLAINT_IMAGES.plumbing,
+    upvotes: 7,
+    upvoted_by: ["usr_resident_1", "usr_resident_2"],
     created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
     verified_by: "Vikram Malhotra (Wing Rep)",
     assigned_worker: null,
@@ -210,6 +214,8 @@ export const INITIAL_DEMO_TICKETS = [
     wing: "Tower 1 (Gulmohar)",
     room_number: "Flat 402",
     image_url: SAMPLE_COMPLAINT_IMAGES.sanitation,
+    upvotes: 2,
+    upvoted_by: ["usr_resident_2"],
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
     verified_by: "Floor Captain Rakesh",
     assigned_worker: "Swachh Cleaning Crew #4",
@@ -229,7 +235,7 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: null,
     claimed_by_user_name: null,
     contact_email: "contact@ecogreen.ngo",
-    reward: "Certificate of Social Impact & ₹5,000 Project Grant",
+    reward: "Certificate of Social Impact & 200 CEP Credits",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
   },
   {
@@ -242,7 +248,7 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: "usr_resident_1",
     claimed_by_user_name: "Aarav Sharma (Student)",
     contact_email: "tech@vidyajyoti.org",
-    reward: "Letter of Recommendation + Industry Mentorship",
+    reward: "Letter of Recommendation + 350 CEP Credits",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
   },
   {
@@ -255,27 +261,27 @@ export const INITIAL_DEMO_CHALLENGES = [
     claimed_by_user_id: null,
     claimed_by_user_name: null,
     contact_email: "alerts@jalrakshak.org",
-    reward: "Hardware Prototype Grant & Certificate",
+    reward: "Hardware Prototype Grant & 500 CEP Credits",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString()
   }
 ];
 
+// Helper to resolve collection names with isolated demo prefix
+const getCol = (name, isDemo = false) => isDemo ? `demo_${name}` : name;
+
 // ============================================================================
-// CLOUD FIRESTORE MODULAR v10+ SERVICES (Sprint 2 Specification)
+// CLOUD FIRESTORE MODULAR v10+ SERVICES
 // ============================================================================
 
-/**
- * Real-time subscription to tickets belonging to a community.
- * Returns the unsubscribe cleanup function.
- */
-export const subscribeTickets = (communityId, onUpdate, onError) => {
+export const subscribeTickets = (communityId, onUpdate, onError, isDemo = false) => {
   if (!db || !communityId) {
     return () => {};
   }
 
   try {
+    const colName = getCol('tickets', isDemo);
     const q = query(
-      collection(db, 'tickets'),
+      collection(db, colName),
       where('community_id', '==', communityId)
     );
 
@@ -285,18 +291,16 @@ export const subscribeTickets = (communityId, onUpdate, onError) => {
         const ticketList = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
-          // Ensure client-usable date format if serverTimestamp is pending
           created_at: docSnap.data().server_created_at?.toDate
             ? docSnap.data().server_created_at.toDate().toISOString()
             : docSnap.data().created_at || new Date().toISOString()
         }));
 
-        // Sort descending by created_at client-side to prevent missing index blocks
         ticketList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         onUpdate(ticketList);
       },
       (error) => {
-        console.warn('Firestore tickets onSnapshot subscription warning/fallback:', error);
+        console.warn(`Firestore ${colName} subscription warning/fallback:`, error);
         if (onError) onError(error);
       }
     );
@@ -309,15 +313,12 @@ export const subscribeTickets = (communityId, onUpdate, onError) => {
   }
 };
 
-/**
- * Real-time subscription to all available communities.
- * Returns the unsubscribe cleanup function.
- */
-export const subscribeCommunities = (onUpdate, onError) => {
+export const subscribeCommunities = (onUpdate, onError, isDemo = false) => {
   if (!db) return () => {};
 
   try {
-    const q = collection(db, 'communities');
+    const colName = getCol('communities', isDemo);
+    const q = collection(db, colName);
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -331,7 +332,7 @@ export const subscribeCommunities = (onUpdate, onError) => {
         }
       },
       (error) => {
-        console.warn('Firestore communities subscription warning:', error);
+        console.warn(`Firestore ${colName} subscription warning:`, error);
         if (onError) onError(error);
       }
     );
@@ -344,15 +345,12 @@ export const subscribeCommunities = (onUpdate, onError) => {
   }
 };
 
-/**
- * Real-time subscription to NGO challenges.
- * Returns the unsubscribe cleanup function.
- */
-export const subscribeChallenges = (onUpdate, onError) => {
+export const subscribeChallenges = (onUpdate, onError, isDemo = false) => {
   if (!db) return () => {};
 
   try {
-    const q = collection(db, 'challenges');
+    const colName = getCol('challenges', isDemo);
+    const q = collection(db, colName);
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -366,7 +364,7 @@ export const subscribeChallenges = (onUpdate, onError) => {
         }
       },
       (error) => {
-        console.warn('Firestore challenges subscription warning:', error);
+        console.warn(`Firestore ${colName} subscription warning:`, error);
         if (onError) onError(error);
       }
     );
@@ -381,21 +379,24 @@ export const subscribeChallenges = (onUpdate, onError) => {
 
 /**
  * Persist a new ticket into Cloud Firestore using modular v10+ setDoc with serverTimestamp.
- * Enforces a strict blocking AI deduplication gate before writing to the database.
+ * Enforces a strict blocking AI deduplication gate against active community tickets.
  */
-export const createTicketInFirestore = async (ticket) => {
+export const createTicketInFirestore = async (ticket, existingComplaints = [], isDemo = false) => {
   if (!db) return ticket;
 
   const backendUrl = import.meta.env.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
   try {
+    const formattedExisting = (existingComplaints || []).map(t => ({
+      ticket_id: t.ticket_id || t.id || 'TICK-PREV',
+      text: `${t.title || ''}. ${t.description || ''}`
+    }));
+
     const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        title: ticket.title, 
-        description: ticket.description,
-        communityId: ticket.community_id,
-        wing: ticket.wing 
+        new_complaint: `${ticket.title}. ${ticket.description}`,
+        existing_complaints: formattedExisting
       })
     });
     
@@ -407,39 +408,56 @@ export const createTicketInFirestore = async (ticket) => {
     }
   } catch (error) {
     if (error instanceof DuplicateTicketError) {
-      throw error; // Re-throw to be caught by the UI
+      throw error; // Re-throw to be caught and displayed by the UI
     }
-    console.warn("Deduplication check failed or backend unreachable, proceeding with save:", error);
+    console.warn("Deduplication check encountered network/fallback:", error);
   }
 
-  const docRef = doc(db, 'tickets', ticket.ticket_id);
+  const colName = getCol('tickets', isDemo);
+  const docRef = doc(db, colName, ticket.ticket_id);
   await setDoc(docRef, {
     ...ticket,
     isDuplicate: false,
+    upvotes: ticket.upvotes || 0,
+    upvoted_by: ticket.upvoted_by || [],
     server_created_at: serverTimestamp(),
     server_updated_at: serverTimestamp()
   });
   return ticket;
 };
 
-/**
- * Update an existing ticket in Cloud Firestore with serverTimestamp.
- */
-export const updateTicketInFirestore = async (ticketId, updateData) => {
+export const updateTicketInFirestore = async (ticketId, updateData, isDemo = false) => {
   if (!db) return;
-  const docRef = doc(db, 'tickets', ticketId);
+  const colName = getCol('tickets', isDemo);
+  const docRef = doc(db, colName, ticketId);
   await updateDoc(docRef, {
     ...updateData,
     server_updated_at: serverTimestamp()
   });
 };
 
-/**
- * Create a new community in Cloud Firestore.
- */
-export const createCommunityInFirestore = async (community) => {
+export const upvoteTicketInFirestore = async (ticketId, userId, isDemo = false) => {
+  if (!db || !ticketId) return;
+  const colName = getCol('tickets', isDemo);
+  const docRef = doc(db, colName, ticketId);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    const upvotedBy = data.upvoted_by || [];
+    if (!upvotedBy.includes(userId)) {
+      await updateDoc(docRef, {
+        upvotes: (data.upvotes || 0) + 1,
+        upvoted_by: [...upvotedBy, userId],
+        server_updated_at: serverTimestamp()
+      });
+    }
+  }
+};
+
+export const createCommunityInFirestore = async (community, isDemo = false) => {
   if (!db) return community;
-  const docRef = doc(db, 'communities', community.community_id);
+  const colName = getCol('communities', isDemo);
+  const docRef = doc(db, colName, community.community_id);
   await setDoc(docRef, {
     ...community,
     server_created_at: serverTimestamp()
@@ -447,12 +465,10 @@ export const createCommunityInFirestore = async (community) => {
   return community;
 };
 
-/**
- * Join an existing community in Cloud Firestore.
- */
-export const joinCommunityInFirestore = async (communityId, member) => {
+export const joinCommunityInFirestore = async (communityId, member, isDemo = false) => {
   if (!db) return;
-  const docRef = doc(db, 'communities', communityId);
+  const colName = getCol('communities', isDemo);
+  const docRef = doc(db, colName, communityId);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     const currentMembers = docSnap.data().members || [];
@@ -463,12 +479,10 @@ export const joinCommunityInFirestore = async (communityId, member) => {
   }
 };
 
-/**
- * Claim an NGO challenge in Cloud Firestore.
- */
-export const claimChallengeInFirestore = async (challengeId, studentUserId, studentName) => {
+export const claimChallengeInFirestore = async (challengeId, studentUserId, studentName, isDemo = false) => {
   if (!db) return;
-  const docRef = doc(db, 'challenges', challengeId);
+  const colName = getCol('challenges', isDemo);
+  const docRef = doc(db, colName, challengeId);
   await updateDoc(docRef, {
     status: 'Claimed',
     claimed_by_user_id: studentUserId,
@@ -478,12 +492,10 @@ export const claimChallengeInFirestore = async (challengeId, studentUserId, stud
   });
 };
 
-/**
- * Post a new NGO challenge in Cloud Firestore.
- */
-export const postChallengeInFirestore = async (challenge) => {
+export const postChallengeInFirestore = async (challenge, isDemo = false) => {
   if (!db) return challenge;
-  const docRef = doc(db, 'challenges', challenge.challenge_id);
+  const colName = getCol('challenges', isDemo);
+  const docRef = doc(db, colName, challenge.challenge_id);
   await setDoc(docRef, {
     ...challenge,
     server_created_at: serverTimestamp()
@@ -491,26 +503,23 @@ export const postChallengeInFirestore = async (challenge) => {
   return challenge;
 };
 
-/**
- * Seed initial demonstration data into Cloud Firestore if collections are empty.
- */
 export const seedDemoDataToFirestore = async () => {
   if (!db) return;
   try {
     for (const comm of INITIAL_DEMO_COMMUNITIES) {
-      await setDoc(doc(db, 'communities', comm.community_id), {
+      await setDoc(doc(db, 'demo_communities', comm.community_id), {
         ...comm,
         server_created_at: serverTimestamp()
       }, { merge: true });
     }
     for (const tkt of INITIAL_DEMO_TICKETS) {
-      await setDoc(doc(db, 'tickets', tkt.ticket_id), {
+      await setDoc(doc(db, 'demo_tickets', tkt.ticket_id), {
         ...tkt,
         server_created_at: serverTimestamp()
       }, { merge: true });
     }
     for (const ch of INITIAL_DEMO_CHALLENGES) {
-      await setDoc(doc(db, 'challenges', ch.challenge_id), {
+      await setDoc(doc(db, 'demo_challenges', ch.challenge_id), {
         ...ch,
         server_created_at: serverTimestamp()
       }, { merge: true });

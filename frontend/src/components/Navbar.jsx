@@ -14,14 +14,23 @@ import {
   Check,
   Plus,
   GraduationCap,
-  ToggleLeft,
-  ToggleRight
+  ExternalLink
 } from 'lucide-react';
 import QRCodeModal from './QRCodeModal';
 import CommunityModal from './CommunityModal';
 
 export default function Navbar({ onOpenAuthModal }) {
-  const { currentUser, role, logout, switchDemoRole, isAuthenticated, isDemoMode, toggleDemoMode } = useAuth();
+  const { 
+    currentUser, 
+    role, 
+    logout, 
+    switchDemoRole, 
+    isAuthenticated, 
+    isDemoMode, 
+    navigateToDemo, 
+    navigateToProd 
+  } = useAuth();
+  
   const { activeCommunity, resetToDemoDefaults, getNomenclature } = useCommunity();
   const [showQRModal, setShowQRModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
@@ -31,7 +40,7 @@ export default function Navbar({ onOpenAuthModal }) {
 
   const getRoleDisplayTitle = (roleKey) => {
     if (roleKey === 'wing_rep') return nom.verifier_label || "Wing Rep";
-    if (roleKey === 'admin') return nom.authority_label || "Admin";
+    if (roleKey === 'admin') return nom.authority_label || "Estate Admin";
     if (roleKey === 'ngo') return "NGO Partner";
     return nom.reporter_label || "Resident";
   };
@@ -59,16 +68,18 @@ export default function Navbar({ onOpenAuthModal }) {
 
   return (
     <>
-      {/* Demo Mode Banner */}
+      {/* Isolated Demo Environment Banner (Active only on /demo route) */}
       {isDemoMode && (
-        <div className="w-full bg-gradient-to-r from-amber-600/90 via-amber-500/90 to-amber-600/90 text-slate-950 text-center py-1 px-3 text-[11px] font-bold tracking-wide flex items-center justify-center gap-2 z-50">
-          <GraduationCap className="w-3.5 h-3.5" />
-          <span>DEMO MODE — Presentation Data Active</span>
+        <div className="w-full bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-slate-950 py-1.5 px-3 text-[11px] font-bold tracking-wide flex items-center justify-between z-50 shadow-md">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 shrink-0" />
+            <span>DEMO ENVIRONMENT (/demo) — Mock Datastore & 1-Click Persona Testing</span>
+          </div>
           <button
-            onClick={toggleDemoMode}
-            className="ml-2 px-2 py-0.5 rounded bg-amber-900/30 text-amber-100 hover:bg-amber-900/50 text-[10px] font-bold"
+            onClick={navigateToProd}
+            className="px-2.5 py-0.5 rounded-lg bg-slate-950 text-amber-300 hover:bg-slate-900 text-[10px] font-bold transition-all shadow-sm"
           >
-            Exit Demo
+            Switch to Production App (/app)
           </button>
         </div>
       )}
@@ -88,8 +99,12 @@ export default function Navbar({ onOpenAuthModal }) {
                 <h1 className="text-sm sm:text-base font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent truncate">
                   Observatory
                 </h1>
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/50 shrink-0">
-                  CEP
+                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
+                  isDemoMode 
+                    ? 'bg-amber-950 text-amber-300 border border-amber-800/50' 
+                    : 'bg-indigo-950 text-indigo-300 border border-indigo-800/50'
+                }`}>
+                  {isDemoMode ? 'DEMO' : 'PROD'}
                 </span>
               </div>
 
@@ -106,7 +121,7 @@ export default function Navbar({ onOpenAuthModal }) {
             </div>
           </div>
 
-          {/* Desktop Demo Mode Persona Switcher */}
+          {/* Desktop Demo Mode Persona Switcher (Rendered ONLY in Demo Mode) */}
           {isDemoMode && (
             <div className="hidden lg:flex items-center bg-slate-900/90 rounded-xl p-1 border border-amber-500/30 shrink-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 px-2 flex items-center gap-1">
@@ -121,7 +136,7 @@ export default function Navbar({ onOpenAuthModal }) {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                1. {nom.reporter_label}
+                1. Resident
               </button>
               <button
                 onClick={() => switchDemoRole('wing_rep')}
@@ -131,7 +146,7 @@ export default function Navbar({ onOpenAuthModal }) {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                2. {nom.verifier_label}
+                2. Wing Rep
               </button>
               <button
                 onClick={() => switchDemoRole('admin')}
@@ -141,7 +156,7 @@ export default function Navbar({ onOpenAuthModal }) {
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                3. {nom.authority_label}
+                3. Estate Admin
               </button>
               <button
                 onClick={() => switchDemoRole('ngo')}
@@ -158,6 +173,27 @@ export default function Navbar({ onOpenAuthModal }) {
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Switch Endpoint Link */}
+            {!isDemoMode ? (
+              <button
+                onClick={navigateToDemo}
+                className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-300 hover:bg-amber-950/40 text-xs font-semibold flex items-center gap-1.5 touch-press transition-colors"
+                title="Launch Isolated Presentation Demo Mode (/demo)"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Demo (/demo)</span>
+              </button>
+            ) : (
+              <button
+                onClick={navigateToProd}
+                className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/20 text-indigo-300 hover:bg-indigo-950/40 text-xs font-semibold flex items-center gap-1.5 touch-press transition-colors"
+                title="Return to Production Environment (/app)"
+              >
+                <Shield className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">Prod (/app)</span>
+              </button>
+            )}
+
             {/* Community Hub Trigger */}
             <button
               onClick={() => setShowCommunityModal(true)}
@@ -176,24 +212,6 @@ export default function Navbar({ onOpenAuthModal }) {
             >
               <QrCode className="w-3.5 h-3.5 text-indigo-400" />
               <span className="hidden md:inline">QR Code</span>
-            </button>
-
-            {/* Demo Mode Toggle */}
-            <button
-              onClick={toggleDemoMode}
-              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 touch-press transition-colors ${
-                isDemoMode
-                  ? 'border-amber-500/40 bg-amber-950/30 text-amber-300 hover:bg-amber-950/50'
-                  : 'border-slate-800 bg-slate-900/70 text-slate-400 hover:text-slate-200'
-              }`}
-              title={isDemoMode ? "Exit demo mode" : "Enter demo mode for presentation"}
-            >
-              {isDemoMode ? (
-                <ToggleRight className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <ToggleLeft className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">{isDemoMode ? 'Demo' : 'Demo'}</span>
             </button>
 
             {/* User Account / Role Badge */}
@@ -232,85 +250,77 @@ export default function Navbar({ onOpenAuthModal }) {
                           {getRoleDisplayTitle(role)}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {currentUser?.wing}
+                          {currentUser?.wing || "Main"}
+                        </span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400">Gamification Score:</span>
+                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          {currentUser?.cepCredits || 0} Credits
                         </span>
                       </div>
                     </div>
 
-                    {/* Mobile Persona Switcher in Menu (Demo Mode only) */}
+                    {/* Reset Demo Data in Demo Mode */}
                     {isDemoMode && (
-                      <div className="p-2 border-b border-slate-800 lg:hidden space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                          <GraduationCap className="w-3 h-3" />
-                          Demo Persona:
-                        </p>
-                        <div className="grid grid-cols-2 gap-1">
-                          <button
-                            onClick={() => { switchDemoRole('resident'); setShowUserMenu(false); }}
-                            className={`p-1.5 text-xs rounded text-left ${role === 'resident' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'}`}
-                          >
-                            {nom.reporter_label}
-                          </button>
-                          <button
-                            onClick={() => { switchDemoRole('wing_rep'); setShowUserMenu(false); }}
-                            className={`p-1.5 text-xs rounded text-left ${role === 'wing_rep' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'}`}
-                          >
-                            {nom.verifier_label}
-                          </button>
-                          <button
-                            onClick={() => { switchDemoRole('admin'); setShowUserMenu(false); }}
-                            className={`p-1.5 text-xs rounded text-left ${role === 'admin' ? 'bg-purple-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'}`}
-                          >
-                            {nom.authority_label}
-                          </button>
-                          <button
-                            onClick={() => { switchDemoRole('ngo'); setShowUserMenu(false); }}
-                            className={`p-1.5 text-xs rounded text-left ${role === 'ngo' ? 'bg-teal-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'}`}
-                          >
-                            NGO
-                          </button>
-                        </div>
+                      <div className="p-1 border-b border-slate-800">
+                        <button
+                          onClick={() => {
+                            resetToDemoDefaults();
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-xl hover:bg-slate-800 text-left text-xs text-amber-300 flex items-center gap-2 transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset Demo Baseline</span>
+                        </button>
                       </div>
                     )}
 
-                    <button
-                      onClick={() => { resetToDemoDefaults(); setShowUserMenu(false); }}
-                      className="w-full mt-1 px-3 py-1.5 rounded-xl text-left text-xs text-amber-400 hover:bg-amber-950/40 flex items-center gap-1.5"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Reset Demo Defaults
-                    </button>
-
-                    <button
-                      onClick={() => { logout(); setShowUserMenu(false); }}
-                      className="w-full px-3 py-1.5 rounded-xl text-left text-xs font-semibold text-rose-400 hover:bg-rose-950/40 flex items-center gap-1.5"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      Sign Out
-                    </button>
+                    {/* Sign Out Action */}
+                    <div className="p-1">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-xl hover:bg-rose-950/40 text-left text-xs text-rose-300 flex items-center gap-2 transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
               <button
                 onClick={onOpenAuthModal}
-                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 flex items-center gap-1.5 touch-press transition-all"
               >
-                Sign In
+                <User className="w-3.5 h-3.5" />
+                <span>Sign In</span>
               </button>
             )}
           </div>
         </div>
       </header>
 
-      {/* Community Modal */}
-      {showCommunityModal && (
-        <CommunityModal isOpen={showCommunityModal} onClose={() => setShowCommunityModal(false)} />
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <QRCodeModal
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+        />
       )}
 
-      {/* QR Code Adoption Modal */}
-      {showQRModal && (
-        <QRCodeModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} />
+      {/* Community Management Modal */}
+      {showCommunityModal && (
+        <CommunityModal
+          isOpen={showCommunityModal}
+          onClose={() => setShowCommunityModal(false)}
+        />
       )}
     </>
   );
