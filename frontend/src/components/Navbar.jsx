@@ -84,6 +84,30 @@ export default function Navbar({ onOpenAuthModal }) {
         </div>
       )}
 
+      {/* Production Demo Account Notice Banner */}
+      {!isDemoMode && currentUser?.email?.endsWith('@cep.demo') && (
+        <div className="w-full bg-gradient-to-r from-indigo-950 via-purple-950 to-indigo-950 border-b border-indigo-800/80 text-indigo-200 py-1.5 px-3 text-[11px] font-semibold flex items-center justify-between flex-wrap gap-2 z-50">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span>Signed in with evaluation demo account (<strong>{currentUser.name}</strong> • {currentUser.email})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={logout}
+              className="px-2.5 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] shadow-sm transition-colors"
+            >
+              Sign Out to Use Real Account
+            </button>
+            <button
+              onClick={navigateToDemo}
+              className="px-2.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[10px] font-semibold border border-indigo-500/30 transition-colors"
+            >
+              Open /demo Mode
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
           
@@ -293,15 +317,34 @@ export default function Navbar({ onOpenAuthModal }) {
                     </div>
                   </div>
                 )}
+                {/* Quick Direct Sign Out Button */}
+                <button
+                  onClick={logout}
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-rose-500/30 bg-rose-950/20 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 touch-press transition-colors"
+                  title="Sign out of this session"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
               </div>
             ) : (
-              <button
-                onClick={onOpenAuthModal}
-                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 flex items-center gap-1.5 touch-press transition-all"
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>Sign In</span>
-              </button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => onOpenAuthModal && onOpenAuthModal('login')}
+                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 touch-press transition-all"
+                >
+                  <User className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Sign In</span>
+                </button>
+                <button
+                  onClick={() => onOpenAuthModal && onOpenAuthModal('register')}
+                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 flex items-center gap-1.5 touch-press transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-200" />
+                  <span className="hidden sm:inline">Create Account</span>
+                  <span className="sm:hidden">Register</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

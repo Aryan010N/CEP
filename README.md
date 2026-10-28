@@ -70,11 +70,12 @@ To guarantee absolute data integrity, the **Production Application** and the **D
 
 | Parameter | Production Application (`/` or `/app`) | Demo Environment (`/demo`) |
 |---|---|---|
-| **Route Endpoint** | `https://cep-seven.vercel.app/` | `https://cep-seven.vercel.app/demo` |
+| **Route Endpoint** | `https://cep-seven.vercel.app/` (or `/login`, `/register`) | `https://cep-seven.vercel.app/demo` |
 | **Data Isolation** | Real Cloud Firestore collections: `tickets`, `communities`, `users`, `challenges` | Isolated collections: `demo_tickets`, `demo_communities`, `demo_challenges`, `demo_users` |
-| **Authentication** | Real Firebase Auth user accounts only | Seeded 1-Click Evaluation Personas + Demo Accounts |
+| **Authentication** | Real Firebase Auth accounts with embedded Sign In / Create Account gateway | Seeded 1-Click Evaluation Personas + Demo Accounts |
+| **Intake Form State** | Real user inputs (clean empty fields, no mock presets) | 1-Click "Demo Quick Fill (Sample 1, 2, 3)" presets |
 | **Write Protection** | Firestore Security Rules strictly block demo writes from modifying real data | Isolated to `demo_*` collections; zero production pollution |
-| **Persona Switcher** | Hidden (real user profiles only) | Visible top evaluation toolbar (`1. Resident`, `2. Wing Rep`, `3. Estate Admin`, `4. NGO`) |
+| **Persona Switcher** | Hidden (real user profiles only; prominent direct Sign Out) | Visible top evaluation toolbar (`1. Resident`, `2. Wing Rep`, `3. Estate Admin`, `4. NGO`) |
 
 ---
 

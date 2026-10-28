@@ -40,9 +40,12 @@ function AppContent() {
   
   const [currentTab, setCurrentTab] = useState(() => DEFAULT_TAB[role] || 'resident_dashboard');
 
+  const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const isRegisterPath = initialPath === '/register' || initialPath === '/signup';
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authMode, setAuthMode] = useState(isRegisterPath ? 'register' : 'login');
   const [feedWingFilter, setFeedWingFilter] = useState('All');
   const [feedSearch, setFeedSearch] = useState('');
 
@@ -132,7 +135,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-safe-bottom">
       {/* Top Mobile & Desktop App Bar */}
-      <Navbar onOpenAuthModal={() => { setAuthMode('login'); setShowAuthModal(true); }} />
+      <Navbar onOpenAuthModal={(mode = 'login') => { setAuthMode(mode); if (!isAuthenticated) { const el = document.getElementById('auth-section'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } else { setShowAuthModal(true); } }} />
 
       {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-5">
@@ -144,7 +147,7 @@ function AppContent() {
         {/* Dynamic Center Main Area */}
         <main className="flex-1 min-w-0">
           {!isAuthenticated ? (
-            <LandingPage onOpenAuth={() => { setAuthMode('login'); setShowAuthModal(true); }} />
+            <LandingPage initialMode={authMode} onSwitchMode={(mode) => setAuthMode(mode)} />
           ) : (
             <>
               {/* 1. Resident / Reporter View */}

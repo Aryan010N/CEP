@@ -101,10 +101,12 @@ sequenceDiagram
 
 ### Detailed Workflow Step Breakdown:
 
-#### Step 1: Onboarding & Self-Healing Registration
-- Users register via email/password or join via community-specific QR codes (`/?action=join&community=comm_emerald_1`).
-- The application executes an **atomic execution lock** (`isSigningUpRef`) preventing race conditions between Firebase Auth and Firestore `setDoc` writes.
-- If a network partition interrupts the Firestore write, a transactional compensation automatically rolls back the orphaned Auth account, and the `onAuthStateChanged` listener features an **auto-healing sync** that restores user documents if an authenticated user document is ever missing.
+#### Step 1: Onboarding, First-Class Authentication & Self-Healing Sync
+- **Dedicated Auth Gateway:** Unauthenticated visitors landing on `/` immediately see an embedded Auth Card featuring clean `[ Sign In ]` and `[ Create Account ]` tabs, with dedicated URL paths (`/login`, `/register`, `/signup`).
+- **Clear Navigation & Session Control:** The top navigation bar provides prominent `Sign In` and `Create Account` triggers when signed out, and a direct `Sign Out` button when signed in.
+- **Demo Account Isolation Alert:** When an assessment evaluator account (`@cep.demo`) is detected on the production app (`/`), a top notification banner prompts the user to switch to their real account or navigate to `/demo`.
+- **Atomic Registration Flow:** The application executes an **atomic execution lock** (`isSigningUpRef`) preventing race conditions between Firebase Auth and Firestore `setDoc` writes.
+- **Transactional Compensation & Auto-Healing:** If a network partition interrupts the Firestore write, a transactional compensation automatically rolls back the orphaned Auth account, and the `onAuthStateChanged` listener features an **auto-healing sync** that restores user documents if an authenticated user document is ever missing.
 
 #### Step 2: Intelligent Problem Intake & Gemini AI Gates
 - The resident enters an issue description with optional image evidence.
@@ -329,3 +331,4 @@ npm install
 npm run dev
 ```
 Open `http://localhost:5173` for the Production app or `http://localhost:5173/demo` for the Demo sandbox.
+

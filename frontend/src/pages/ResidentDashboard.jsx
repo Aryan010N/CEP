@@ -25,7 +25,7 @@ import {
 import { SAMPLE_COMPLAINT_IMAGES } from '../services/firebase';
 
 export default function ResidentDashboard() {
-  const { currentUser } = useAuth();
+  const { currentUser, isDemoMode, logout } = useAuth();
   const { tickets, submitTicket, upvoteTicket, activeCommunity, getNomenclature } = useCommunity();
   const nom = getNomenclature();
 
@@ -33,7 +33,7 @@ export default function ResidentDashboard() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [wing, setWing] = useState(currentUser?.wing || activeCommunity?.wings?.[0] || 'Wing A');
-  const [roomNumber, setRoomNumber] = useState(currentUser?.room_number || 'A-304');
+  const [roomNumber, setRoomNumber] = useState(currentUser?.room_number || (isDemoMode ? 'A-304' : ''));
   const [selectedImage, setSelectedImage] = useState(null);
   
   // AI Preview Modal State
@@ -148,9 +148,25 @@ export default function ResidentDashboard() {
             <Sparkles className="w-3 h-3 text-indigo-400" />
             {nom.reporter_label} Portal • {activeCommunity?.name}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight">
-            Hi, {currentUser?.name} 👋
+          <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight flex items-center flex-wrap gap-2">
+            Hi, {currentUser?.name || "Resident"} 👋
+            {currentUser?.email?.endsWith('@cep.demo') && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Evaluation Demo Account
+              </span>
+            )}
           </h2>
+          {currentUser?.email?.endsWith('@cep.demo') && !isDemoMode && (
+            <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs flex items-center justify-between flex-wrap gap-2">
+              <span>You are signed in with an evaluation account ({currentUser.email}).</span>
+              <button
+                onClick={logout}
+                className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-sm transition-colors"
+              >
+                Sign Out to Use Real Account
+              </button>
+            </div>
+          )}
           <p className="text-xs text-slate-300/90 leading-relaxed">
             Report maintenance issues with natural language & photo attachments. Our Gemini AI automatically assesses urgency, checks for duplicates, and alerts your <strong>{nom.verifier_label}</strong>.
           </p>
@@ -195,20 +211,22 @@ export default function ResidentDashboard() {
             </p>
           </div>
 
-          {/* Preset Buttons for Frictionless Demo */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] font-semibold text-slate-400">Quick Test:</span>
-            {demoScenarios.map((sc, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handlePreFill(sc)}
-                className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-900 border border-slate-700 text-indigo-300 hover:border-indigo-500 hover:bg-slate-800 touch-press transition-colors"
-              >
-                Sample {i + 1}
-              </button>
-            ))}
-          </div>
+          {/* Preset Buttons for Frictionless Demo (Rendered ONLY in Demo Mode) */}
+          {isDemoMode && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-semibold text-amber-400">Demo Quick Fill:</span>
+              {demoScenarios.map((sc, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handlePreFill(sc)}
+                  className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-900 border border-slate-700 text-amber-300 hover:border-amber-500 hover:bg-slate-800 touch-press transition-colors"
+                >
+                  Sample {i + 1}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
