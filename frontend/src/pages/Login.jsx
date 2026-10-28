@@ -112,7 +112,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
                 className="p-2 rounded-xl border border-purple-500/20 bg-purple-900/30 hover:bg-purple-800/40 text-left transition-colors"
               >
                 <p className="text-xs font-bold text-purple-200">Dr. Rajesh Iyer</p>
-                <p className="text-[10px] text-purple-300/80">Chief Warden / Admin</p>
+                <p className="text-[10px] text-purple-300/80">Estate Admin</p>
               </button>
               <button
                 type="button"

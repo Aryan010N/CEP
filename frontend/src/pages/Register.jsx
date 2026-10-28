@@ -76,7 +76,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
   const nom = selectedCommunity?.nomenclature || {
     reporter_label: "Resident / Student",
     verifier_label: "Wing Representative",
-    authority_label: "Estate Warden / Admin"
+    authority_label: "Estate Admin"
   };
 
   const roleOptions = [
