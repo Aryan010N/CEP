@@ -101,12 +101,16 @@ sequenceDiagram
 
 ### Detailed Workflow Step Breakdown:
 
-#### Step 1: Onboarding, First-Class Authentication & Self-Healing Sync
+#### Step 1: Onboarding, First-Class Authentication & QR Join Flow
 - **Dedicated Auth Gateway:** Unauthenticated visitors landing on `/` immediately see an embedded Auth Card featuring clean `[ Sign In ]` and `[ Create Account ]` tabs, with dedicated URL paths (`/login`, `/register`, `/signup`).
-- **Clear Navigation & Session Control:** The top navigation bar provides prominent `Sign In` and `Create Account` triggers when signed out, and a direct `Sign Out` button when signed in.
-- **Demo Account Isolation Alert:** When an assessment evaluator account (`@cep.demo`) is detected on the production app (`/`), a top notification banner prompts the user to switch to their real account or navigate to `/demo`.
-- **Atomic Registration Flow:** The application executes an **atomic execution lock** (`isSigningUpRef`) preventing race conditions between Firebase Auth and Firestore `setDoc` writes.
-- **Transactional Compensation & Auto-Healing:** If a network partition interrupts the Firestore write, a transactional compensation automatically rolls back the orphaned Auth account, and the `onAuthStateChanged` listener features an **auto-healing sync** that restores user documents if an authenticated user document is ever missing.
+- **Input Constraints & Auto-Normalization:**
+  - **Email Address:** Valid institutional or personal email (`student@vit.edu` or `user@gmail.com`), automatically trimmed.
+  - **Phone Number:** 10 to 15 digits with optional country code (`+91 98765 43210` or `9876543210`), auto-normalized by stripping whitespace and dashes.
+  - **Password:** Minimum 8 characters, at least 1 uppercase letter (`A-Z`), and at least 1 numeric digit (`0-9`), verified via real-time UI constraint badges.
+  - **Room / Flat Location:** Mandatory for `resident` roles (e.g. `Room 204`, `Flat A-301`), optional for administrators/NGOs.
+- **Dynamic QR Code Onboarding:** Scanning community posters (`/?action=join&community={id}`) routes unauthenticated residents directly to the Register form, pre-selects the community and division, and shows an active QR join banner.
+- **Session Control & Demo Separation:** The top navbar features prominent `Sign In` and `Create Account` buttons when logged out, and a direct `Sign Out` button when logged in. Visiting `/` with a cached evaluator demo account displays an active notice allowing 1-click sign out.
+- **Atomic Registration & Auto-Healing:** An atomic lock (`isSigningUpRef`) synchronizes Firebase Auth and Firestore `/users/{uid}` records, backed by automatic rollback on write failures and auto-healing sync.
 
 #### Step 2: Intelligent Problem Intake & Gemini AI Gates
 - The resident enters an issue description with optional image evidence.

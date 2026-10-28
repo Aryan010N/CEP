@@ -65,9 +65,9 @@ function AppContent() {
 
     if (action === 'join' && communityId && !isLoading) {
       if (!isAuthenticated) {
-        setAuthMode('login');
-        setShowAuthModal(true);
-        // We do NOT clear the URL yet, so after login the effect runs again and joins
+        setAuthMode('register');
+        const el = document.getElementById('auth-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
         return;
       }
       

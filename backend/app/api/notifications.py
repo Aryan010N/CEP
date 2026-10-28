@@ -79,7 +79,7 @@ async def send_sms_alert(payload: SMSNotificationRequest):
     # High-fidelity simulated delivery (logged within SLA of 30 seconds)
     latency = round(time.time() - start_time + 0.8, 2)
     fake_sid = f"SM_sim_{int(time.time())}_{abs(hash(payload.to_phone)) % 10000}"
-    print(f"📡 [SMS DISPATCH within 30s] To: {payload.to_phone} | Ticket: {payload.ticket_id} | Msg: {payload.message}")
+    print(f"[SMS DISPATCH within 30s] To: {payload.to_phone} | Ticket: {payload.ticket_id} | Msg: {payload.message}")
 
     return SMSNotificationResponse(
         status="delivered",
@@ -131,7 +131,7 @@ async def send_email_notification(payload: EmailNotificationRequest):
             print(f"Resend API email delivery failed, falling back to logger: {e}")
 
     fake_id = f"em_sim_{int(time.time())}_{abs(hash(payload.to_email)) % 10000}"
-    print(f"📧 [EMAIL DISPATCH] To: {payload.to_email} | Subject: {payload.subject} | Template: {payload.template}")
+    print(f"[EMAIL DISPATCH] To: {payload.to_email} | Subject: {payload.subject} | Template: {payload.template}")
 
     return EmailNotificationResponse(
         status="sent",

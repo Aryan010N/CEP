@@ -37,7 +37,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isAuthenticated();
       allow create: if request.auth.uid == uid;
-      allow update: if request.auth.uid == uid || hasRole('admin');
+      allow update, delete: if request.auth.uid == uid || hasRole('admin');
     }
 
     // Tickets
