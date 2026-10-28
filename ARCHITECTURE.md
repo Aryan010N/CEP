@@ -90,3 +90,4 @@ The security rules enforce role-based access control and authenticated boundarie
 - **`tickets/{ticketId}`**: Authenticated residents in the community can read; creation requires `resident_id == request.auth.uid`; updates restricted to Wing Reps (`isWingRep`) or Estate Admins (`hasRole('admin')`).
 - **`challenges/{challengeId}`**: Publicly readable by all authenticated community members; claimable by students; editable by the posting NGO.
 - **`demo_*`**: Open to authenticated demo sessions for uninterrupted interactive evaluations.
+

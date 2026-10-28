@@ -63,3 +63,4 @@ export async function dispatchStatusEmail({ toEmail, ticketId, title, status, as
     return { status: "simulated", simulated: true };
   }
 }
+

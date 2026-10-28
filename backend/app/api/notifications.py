@@ -140,3 +140,4 @@ async def send_email_notification(payload: EmailNotificationRequest):
         simulated=True,
         recipient=payload.to_email
     )
+
