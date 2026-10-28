@@ -180,6 +180,7 @@ interface ChallengeDocument {
 
 ## 📚 Documentation Reference
 
+- **[WORKFLOW_AND_PROBLEM_STATEMENT.md](./WORKFLOW_AND_PROBLEM_STATEMENT.md):** Complete 0-to-100 specification, problem statement, workflow stages, schemas, and live audit.
 - **[SETUP.md](./SETUP.md):** Complete local setup, environment variables, Docker instructions, and Playwright automated testing.
 - **[ARCHITECTURE.md](./ARCHITECTURE.md):** Deep-dive system architecture, notification event pipeline, and security model.
 - **[TEACHER_ASSESSMENT_GUIDE.md](./TEACHER_ASSESSMENT_GUIDE.md):** Oral viva defense matrix, rubric alignment, and evaluation guide.
