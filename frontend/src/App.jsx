@@ -16,7 +16,7 @@ import NGOMarketplace from './pages/NGOMarketplace';
 import Scoreboard from './pages/Scoreboard';
 import LandingPage from './pages/LandingPage';
 import TicketCard from './components/TicketCard';
-import { Layers, Search, Filter, Shield, Sparkles, Building2 } from 'lucide-react';
+import { Layers, Search, Filter, Shield, Sparkles, Building2, CheckCircle2, ArrowRight } from 'lucide-react';
 
 // Map roles to their allowed tabs
 const ROLE_TABS = {
@@ -33,31 +33,88 @@ const DEFAULT_TAB = {
   ngo: 'ngo_marketplace',
 };
 
+// Explicit URL Routes to Tab IDs
+const PATH_TO_TAB = {
+  '/dashboard': 'resident_dashboard',
+  '/resident': 'resident_dashboard',
+  '/rep': 'rep_backlog',
+  '/wing-rep': 'rep_backlog',
+  '/backlog': 'rep_backlog',
+  '/admin': 'admin_dashboard',
+  '/estate-admin': 'admin_dashboard',
+  '/analytics': 'admin_analytics',
+  '/feed': 'community_feed',
+  '/challenges': 'ngo_marketplace',
+  '/marketplace': 'ngo_marketplace',
+  '/scoreboard': 'scoreboard',
+  '/leaderboard': 'scoreboard'
+};
+
+const TAB_TO_PATH = {
+  'resident_dashboard': '/dashboard',
+  'rep_backlog': '/rep',
+  'admin_dashboard': '/admin',
+  'admin_analytics': '/analytics',
+  'community_feed': '/feed',
+  'ngo_marketplace': '/challenges',
+  'scoreboard': '/scoreboard'
+};
+
 function AppContent() {
-  const { role, currentUser, isAuthenticated, isLoading } = useAuth();
+  const { role, currentUser, isAuthenticated, isLoading, logout } = useAuth();
   const { tickets, updateTicketByRep, updateTicketByAdmin, upvoteTicket, activeCommunity, getNomenclature, joinCommunity } = useCommunity();
   const nom = getNomenclature();
-  
-  const [currentTab, setCurrentTab] = useState(() => DEFAULT_TAB[role] || 'resident_dashboard');
 
-  const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const isRegisterPath = initialPath === '/register' || initialPath === '/signup';
+  const [currentPath, setCurrentPath] = useState(() => 
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  );
+
+  const initialMatchedTab = PATH_TO_TAB[currentPath];
+  const [currentTab, setCurrentTab] = useState(() => initialMatchedTab || DEFAULT_TAB[role] || 'resident_dashboard');
+
+  const isRegisterRoute = currentPath === '/register' || currentPath === '/signup';
+  const isLoginRoute = currentPath === '/login' || currentPath === '/signin';
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCommunityModal, setShowCommunityModal] = useState(false);
-  const [authMode, setAuthMode] = useState(isRegisterPath ? 'register' : 'login');
+  const [authMode, setAuthMode] = useState(isRegisterRoute ? 'register' : 'login');
   const [feedWingFilter, setFeedWingFilter] = useState('All');
   const [feedSearch, setFeedSearch] = useState('');
+
+  // Bidirectional routing sync on mount & popstate
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = window.location.pathname;
+      setCurrentPath(p);
+      const matched = PATH_TO_TAB[p];
+      if (matched) {
+        setCurrentTab(matched);
+      }
+      if (p === '/signup' || p === '/register') {
+        setAuthMode('register');
+      } else if (p === '/login' || p === '/signin') {
+        setAuthMode('login');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Handle role change — reset to default tab for that role
   useEffect(() => {
     const allowed = ROLE_TABS[role] || ROLE_TABS.resident;
     if (!allowed.includes(currentTab)) {
-      setCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard');
+      const fallback = DEFAULT_TAB[role] || 'resident_dashboard';
+      setCurrentTab(fallback);
+      if (TAB_TO_PATH[fallback] && currentPath !== '/') {
+        window.history.replaceState({}, '', TAB_TO_PATH[fallback]);
+        setCurrentPath(TAB_TO_PATH[fallback]);
+      }
     }
   }, [role]);
 
-  // Parse URL params for join flow on mount
+  // Parse URL params for join flow on mount (?action=join&community=comm_emerald_1)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
@@ -66,27 +123,35 @@ function AppContent() {
     if (action === 'join' && communityId && !isLoading) {
       if (!isAuthenticated) {
         setAuthMode('register');
-        const el = document.getElementById('auth-section');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        navigateTo('/signup');
         return;
       }
       
-      // Attempt to join community
+      // If already authenticated, attempt to join community
       setTimeout(() => {
         joinCommunity(communityId);
-        // Clear URL params
         window.history.replaceState({}, '', window.location.pathname);
       }, 500);
     }
   }, [isAuthenticated, isLoading]);
 
-  // Tab guard — enforce allowed tabs
+  const navigateTo = (path, tabId = null) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+    if (tabId) {
+      setCurrentTab(tabId);
+    }
+  };
+
+  // Tab guard — enforce allowed tabs and update URL
   const handleSetCurrentTab = (tabId) => {
     const allowed = ROLE_TABS[role] || ROLE_TABS.resident;
-    if (allowed.includes(tabId)) {
-      setCurrentTab(tabId);
-    } else {
-      setCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard');
+    const targetTab = allowed.includes(tabId) ? tabId : (DEFAULT_TAB[role] || 'resident_dashboard');
+    setCurrentTab(targetTab);
+    const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+      setCurrentPath(targetPath);
     }
   };
 
@@ -135,20 +200,97 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-safe-bottom">
       {/* Top Mobile & Desktop App Bar */}
-      <Navbar onOpenAuthModal={(mode = 'login') => { setAuthMode(mode); if (!isAuthenticated) { const el = document.getElementById('auth-section'); if (el) el.scrollIntoView({ behavior: 'smooth' }); } else { setShowAuthModal(true); } }} />
+      <Navbar onOpenAuthModal={(mode = 'login') => {
+        setAuthMode(mode);
+        navigateTo(mode === 'register' ? '/signup' : '/login');
+      }} />
 
       {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 lg:gap-5">
         
-        {isAuthenticated && (
+        {isAuthenticated && !isLoginRoute && !isRegisterRoute && (
           <Sidebar currentTab={currentTab} setCurrentTab={handleSetCurrentTab} />
         )}
 
         {/* Dynamic Center Main Area */}
         <main className="flex-1 min-w-0">
-          {!isAuthenticated ? (
-            <LandingPage initialMode={authMode} onSwitchMode={(mode) => setAuthMode(mode)} />
-          ) : (
+          {/* Explicit Standalone /login Route */}
+          {isLoginRoute && (
+            !isAuthenticated ? (
+              <div className="py-8 max-w-lg mx-auto">
+                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
+                  <Login onSwitchToRegister={() => navigateTo('/signup')} />
+                </div>
+              </div>
+            ) : (
+              <div className="glass-panel p-8 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-4 my-12">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Already Signed In</h2>
+                <p className="text-xs text-slate-300">
+                  You are authenticated as <strong>{currentUser?.name}</strong> ({currentUser?.email}) with role <span className="capitalize text-indigo-300">{role}</span>.
+                </p>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => handleSetCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard')}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                  >
+                    Go to My Dashboard
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-xs"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Explicit Standalone /signup Route */}
+          {isRegisterRoute && (
+            !isAuthenticated ? (
+              <div className="py-8 max-w-xl mx-auto">
+                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
+                  <Register onSwitchToLogin={() => navigateTo('/login')} />
+                </div>
+              </div>
+            ) : (
+              <div className="glass-panel p-8 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-4 my-12">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Already Signed In</h2>
+                <p className="text-xs text-slate-300">
+                  You are authenticated as <strong>{currentUser?.name}</strong>.
+                </p>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => handleSetCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard')}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                  >
+                    Go to My Dashboard
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-xs"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Unauthenticated Home Landing */}
+          {!isAuthenticated && !isLoginRoute && !isRegisterRoute && (
+            <LandingPage initialMode={authMode} onSwitchMode={(mode) => navigateTo(mode === 'register' ? '/signup' : '/login')} />
+          )}
+
+          {/* Authenticated Application Portals */}
+          {isAuthenticated && !isLoginRoute && !isRegisterRoute && (
             <>
               {/* 1. Resident / Reporter View */}
               {role === 'resident' && currentTab === 'resident_dashboard' && (
@@ -175,79 +317,79 @@ function AppContent() {
                 <Scoreboard />
               )}
 
-              {/* 5. Public Community Live Feed */}
+              {/* 6. Public Community Live Feed */}
               {currentTab === 'community_feed' && (
-            <div className="space-y-4">
-              <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-indigo-400" />
-                      Public Problem Register ({feedTickets.length})
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Transparent community board for {activeCommunity?.name}
-                    </p>
+                <div className="space-y-4">
+                  <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-1.5">
+                          <Layers className="w-4 h-4 text-indigo-400" />
+                          Public Problem Register ({feedTickets.length})
+                        </h3>
+                        <p className="text-[11px] text-slate-400">
+                          Transparent community board for {activeCommunity?.name}
+                        </p>
+                      </div>
+
+                      {/* Filters */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={feedWingFilter}
+                          onChange={(e) => setFeedWingFilter(e.target.value)}
+                          className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="All">All {nom.division_label}s</option>
+                          {(activeCommunity?.wings || []).map(w => (
+                            <option key={w} value={w}>{w}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        value={feedSearch}
+                        onChange={(e) => setFeedSearch(e.target.value)}
+                        placeholder="Search by problem keyword, category, room..."
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
                   </div>
 
-                  {/* Filters */}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={feedWingFilter}
-                      onChange={(e) => setFeedWingFilter(e.target.value)}
-                      className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="All">All {nom.division_label}s</option>
-                      {(activeCommunity?.wings || []).map(w => (
-                        <option key={w} value={w}>{w}</option>
-                      ))}
-                    </select>
+                  {/* Feed Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {feedTickets.map(ticket => (
+                      <TicketCard
+                        key={ticket.ticket_id}
+                        ticket={ticket}
+                        currentRole={role}
+                        currentUserId={currentUser?.uid}
+                        onRepVerify={(id) => updateTicketByRep(id, true, currentUser?.name)}
+                        onRepReject={(id, reason) => updateTicketByRep(id, false, currentUser?.name, reason)}
+                        onAdminUpdate={(id, data) => updateTicketByAdmin(id, data)}
+                        onUpvote={(id) => upvoteTicket(id)}
+                      />
+                    ))}
+                    {feedTickets.length === 0 && (
+                      <div className="col-span-full glass-panel p-6 rounded-2xl text-center text-slate-400 space-y-1.5">
+                        <Layers className="w-6 h-6 text-indigo-400/60 mx-auto" />
+                        <p className="text-xs font-semibold text-slate-300">No tickets in this community yet</p>
+                        <p className="text-[11px]">Be the first to report an issue!</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={feedSearch}
-                    onChange={(e) => setFeedSearch(e.target.value)}
-                    placeholder={`Search by problem keyword, category, room...`}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              {/* Feed Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {feedTickets.map(ticket => (
-                  <TicketCard
-                    key={ticket.ticket_id}
-                    ticket={ticket}
-                    currentRole={role}
-                    currentUserId={currentUser?.uid}
-                    onRepVerify={(id) => updateTicketByRep(id, true, currentUser?.name)}
-                    onRepReject={(id, reason) => updateTicketByRep(id, false, currentUser?.name, reason)}
-                    onAdminUpdate={(id, data) => updateTicketByAdmin(id, data)}
-                    onUpvote={(id) => upvoteTicket(id)}
-                  />
-                ))}
-                {feedTickets.length === 0 && (
-                  <div className="col-span-full glass-panel p-6 rounded-2xl text-center text-slate-400 space-y-1.5">
-                    <Layers className="w-6 h-6 text-indigo-400/60 mx-auto" />
-                    <p className="text-xs font-semibold text-slate-300">No tickets in this community yet</p>
-                    <p className="text-[11px]">Be the first to report an issue!</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+              )}
             </>
           )}
         </main>
       </div>
 
       {/* Mobile-First Bottom Navigation Bar */}
-      {isAuthenticated && (
+      {isAuthenticated && !isLoginRoute && !isRegisterRoute && (
         <BottomNav
           currentTab={currentTab}
           setCurrentTab={handleSetCurrentTab}
@@ -264,7 +406,7 @@ function AppContent() {
         />
       )}
 
-      {/* Auth Modal (Login / Register) */}
+      {/* Auth Modal (Fallback for quick popups) */}
       <Modal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}

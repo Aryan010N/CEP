@@ -6,26 +6,30 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function hasUserData() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function hasRole(role) {
-      return isAuthenticated() && getUserData().role == role;
+      return hasUserData() && getUserData().role == role;
     }
 
     function isSameCommunity(communityId) {
-      return isAuthenticated() && (
+      return hasUserData() && (
         getUserData().communityId == communityId || 
         getUserData().community_id == communityId
       );
     }
 
     function isWingRep(community_id, wing) {
-      return request.auth != null && (
+      return isAuthenticated() && (
         (exists(/databases/$(database)/documents/communities/$(community_id)) && 
          get(/databases/$(database)/documents/communities/$(community_id)).data.wing_reps[request.auth.uid] == wing) ||
-        getUserData().role == 'wing_rep'
+        (hasUserData() && getUserData().role == 'wing_rep')
       );
     }
 

@@ -254,23 +254,53 @@ interface NGOChallenge {
 
 ## 6. Live Infrastructure & Environment Configuration
 
-### 6.1 Endpoints & Deployment Status
-- **Frontend Web App (Production):** [https://cep-seven.vercel.app/](https://cep-seven.vercel.app/)
-- **Frontend Web App (Demo):** [https://cep-seven.vercel.app/demo](https://cep-seven.vercel.app/demo)
-- **Backend API Server (Render):** [https://cep-wacs.onrender.com](https://cep-wacs.onrender.com)
-- **Firebase Project Console:** [https://console.firebase.google.com/u/0/project/cep-ai/overview](https://console.firebase.google.com/u/0/project/cep-ai/overview)
+### 6.1 Multi-Endpoint URL Routing Matrix (Vercel SPA Rewrites)
+The application provides distinct, bookmarkable routes backed by `vercel.json` SPA rewrites (`/(.*) -> /index.html`):
 
-### 6.2 Essential Environment Variables
+| Endpoint Route | Primary View / Functionality | Access Policy |
+|---|---|---|
+| **`/`** | Platform Landing Page / Overview | Public (Redirects to dashboard if logged in) |
+| **`/signup`** (or `/register`) | Dedicated Full-Page Registration | Public (Pre-selects community if QR invite scanned) |
+| **`/login`** (or `/signin`) | Dedicated Full-Page Sign In | Public |
+| **`/dashboard`** (or `/resident`) | Resident / Student Problem Intake & Active Tickets | Authenticated Residents |
+| **`/rep`** (or `/wing-rep`) | Wing Representative Verification Queue & Actions | Authenticated Wing Reps |
+| **`/admin`** (or `/estate-admin`) | Estate Admin Workforce Dispatch Hub & Metrics | Authenticated Estate Admins |
+| **`/analytics`** | Gemini AI Executive Reports & Trends | Authenticated Estate Admins |
+| **`/challenges`** (or `/ngo`) | NGO Community Challenges Marketplace | Authenticated Members & Students |
+| **`/scoreboard`** | CEP Credit Gamification Honor Roll & Leaderboard | Authenticated Members |
+| **`/feed`** | Public Problem Register for Active Community | Authenticated Members |
+| **`/demo`** | Isolated 1-Click Evaluation Sandbox | Evaluators / Guests (`demo_*` collections) |
+
+### 6.2 Notifications, Rate Limiting & Verification Architecture
+
+```
+┌────────────────────────┐       ┌────────────────────────┐       ┌────────────────────────┐
+│ Twilio SMS / WhatsApp  │       │ Resend Transactional   │       │ Firebase Auth Email    │
+│ Gateway (<30s SLA)     │       │ Email Engine           │       │ Verification Links     │
+└────────────────────────┘       └────────────────────────┘       └────────────────────────┘
+            │                                │                                │
+            ▼                                ▼                                ▼
+[Sliding-Window Rate Limiter]    [Sliding-Window Rate Limiter]    [Built-in Firebase Token]
+Max 5 requests / min / phone     Max 10 requests / min / email    Anti-Phishing Hash Check
+```
+
+- **Twilio Messaging API:** Dispatches SMS and WhatsApp alerts to Estate Admins upon Wing Rep verification. Supports standard SMS and WhatsApp sandbox via `whatsapp:+14155238886`.
+- **Sliding-Window Rate Limiting:** Enforced via `SlidingWindowRateLimiter` in FastAPI to prevent quota draining or SMS flooding (HTTP 429 Too Many Requests if threshold exceeded).
+- **Automated Transactional Emails:** Resend API integration triggers automated HTML status updates to residents upon defect assignment (`In_Progress`) and resolution (`Resolved`).
+- **Email Verification:** Powered by Firebase Auth's modular `sendEmailVerification(user)` ensuring valid institutional or resident inboxes.
+
+### 6.3 Essential Environment Variables
 
 #### Frontend (`frontend/.env`)
 ```bash
-VITE_FIREBASE_API_KEY=AIzaSy...
+VITE_FIREBASE_API_KEY=AIzaSyADaXMoJOErpXHThu4ZSx4SKy1eXvCmm34
 VITE_FIREBASE_AUTH_DOMAIN=cep-ai.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=cep-ai
-VITE_FIREBASE_STORAGE_BUCKET=cep-ai.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=79146197170
-VITE_FIREBASE_APP_ID=1:79146197170:web:...
-VITE_API_URL=https://cep-wacs.onrender.com
+VITE_FIREBASE_STORAGE_BUCKET=cep-ai.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=920330565851
+VITE_FIREBASE_APP_ID=1:920330565851:web:c0b0c03c098eff4e8b74fe
+VITE_FIREBASE_MEASUREMENT_ID=G-XGHD2EM7JE
+VITE_BACKEND_API_URL=https://cep-wacs.onrender.com
 ```
 
 #### Backend (`backend/.env`)
@@ -279,9 +309,25 @@ GEMINI_API_KEY=AIzaSy...
 TWILIO_ACCOUNT_SID=AC... (or simulated)
 TWILIO_AUTH_TOKEN=...
 TWILIO_PHONE_NUMBER=+1...
+TWILIO_WHATSAPP_NUMBER=+14155238886
 RESEND_API_KEY=re_... (or simulated)
 ALLOWED_ORIGINS=https://cep-seven.vercel.app,http://localhost:5173
 ```
+
+---
+
+## 7. Developer Prerequisites & Project Completion Checklist
+
+To operate the platform in 100% production mode with zero simulation:
+
+| # | Service / Requirement | Where to Configure | Purpose |
+|---|---|---|---|
+| 1 | **Firebase Authentication** | [Firebase Console](https://console.firebase.google.com/u/0/project/cep-ai/authentication) | Ensure **Email/Password** provider is enabled under *Sign-in method*. Add `cep-seven.vercel.app` to *Authorized domains*. |
+| 2 | **Cloud Firestore Security Rules** | [Firestore Rules Tab](https://console.firebase.google.com/u/0/project/cep-ai/firestore/rules) | Hardened ruleset `2a29e05c-1616-4b7b-aaa9-3b858a45a388` is already deployed with `hasUserData()` safety guards. |
+| 3 | **Twilio Messaging Credentials** | [Twilio Console](https://console.twilio.com/) | Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` on Render environment variables for live SMS & WhatsApp. |
+| 4 | **Resend Email API Key** | [Resend Dashboard](https://resend.com/api-keys) | Set `RESEND_API_KEY` on Render to dispatch real automated emails on ticket status progression. |
+| 5 | **Google Gemini API Key** | [Google AI Studio](https://aistudio.google.com/) | Set `GEMINI_API_KEY` on Render for multimodal classification and semantic deduplication. |
+| 6 | **Vercel SPA Rewrites** | [`vercel.json`](file:///C:/CEP/vercel.json) | Configured with `"source": "/(.*)", "destination": "/index.html"` ensuring deep-link routing for all dashboard URLs. |
 
 ---
 
