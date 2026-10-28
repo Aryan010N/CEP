@@ -13,16 +13,17 @@ import ResidentDashboard from './pages/ResidentDashboard';
 import WingRepDashboard from './pages/WingRepDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import NGOMarketplace from './pages/NGOMarketplace';
+import Scoreboard from './pages/Scoreboard';
 import LandingPage from './pages/LandingPage';
 import TicketCard from './components/TicketCard';
 import { Layers, Search, Filter, Shield, Sparkles, Building2 } from 'lucide-react';
 
 // Map roles to their allowed tabs
 const ROLE_TABS = {
-  resident: ['resident_dashboard', 'community_feed', 'ngo_marketplace'],
-  wing_rep: ['rep_backlog', 'community_feed', 'ngo_marketplace'],
-  admin: ['admin_dashboard', 'admin_analytics', 'community_feed', 'ngo_marketplace'],
-  ngo: ['ngo_marketplace', 'community_feed'],
+  resident: ['resident_dashboard', 'community_feed', 'ngo_marketplace', 'scoreboard'],
+  wing_rep: ['rep_backlog', 'community_feed', 'ngo_marketplace', 'scoreboard'],
+  admin: ['admin_dashboard', 'admin_analytics', 'community_feed', 'ngo_marketplace', 'scoreboard'],
+  ngo: ['ngo_marketplace', 'community_feed', 'scoreboard'],
 };
 
 const DEFAULT_TAB = {
@@ -34,7 +35,7 @@ const DEFAULT_TAB = {
 
 function AppContent() {
   const { role, currentUser, isAuthenticated, isLoading } = useAuth();
-  const { tickets, updateTicketByRep, updateTicketByAdmin, activeCommunity, getNomenclature, joinCommunity } = useCommunity();
+  const { tickets, updateTicketByRep, updateTicketByAdmin, upvoteTicket, activeCommunity, getNomenclature, joinCommunity } = useCommunity();
   const nom = getNomenclature();
   
   const [currentTab, setCurrentTab] = useState(() => DEFAULT_TAB[role] || 'resident_dashboard');
@@ -166,6 +167,11 @@ function AppContent() {
                 <NGOMarketplace />
               )}
 
+              {/* 5. Gamification Scoreboard */}
+              {currentTab === 'scoreboard' && (
+                <Scoreboard />
+              )}
+
               {/* 5. Public Community Live Feed */}
               {currentTab === 'community_feed' && (
             <div className="space-y-4">
@@ -219,6 +225,7 @@ function AppContent() {
                     onRepVerify={(id) => updateTicketByRep(id, true, currentUser?.name)}
                     onRepReject={(id, reason) => updateTicketByRep(id, false, currentUser?.name, reason)}
                     onAdminUpdate={(id, data) => updateTicketByAdmin(id, data)}
+                    onUpvote={(id) => upvoteTicket(id)}
                   />
                 ))}
                 {feedTickets.length === 0 && (

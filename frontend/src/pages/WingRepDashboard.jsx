@@ -18,7 +18,7 @@ import {
 
 export default function WingRepDashboard() {
   const { currentUser } = useAuth();
-  const { tickets, updateTicketByRep, activeCommunity, getNomenclature } = useCommunity();
+  const { tickets, updateTicketByRep, upvoteTicket, activeCommunity, getNomenclature } = useCommunity();
   const nom = getNomenclature();
 
   const [selectedWing, setSelectedWing] = useState(currentUser?.wing || activeCommunity?.wings?.[0] || 'All');
@@ -206,6 +206,7 @@ export default function WingRepDashboard() {
                 currentUserId={currentUser?.uid}
                 onRepVerify={handleVerify}
                 onRepReject={handleReject}
+                onUpvote={(id) => upvoteTicket(id)}
               />
             ))}
           </div>

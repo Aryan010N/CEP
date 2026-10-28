@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.tickets import router as tickets_router
 from app.api.reports import router as reports_router
+from app.api.notifications import router as notifications_router
 from app.services.gemini_service import GEMINI_API_KEY, gemini_model
 
 app = FastAPI(
@@ -26,6 +27,7 @@ app.add_middleware(
 # Include Routers
 app.include_router(tickets_router)
 app.include_router(reports_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 async def root():

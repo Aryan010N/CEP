@@ -26,7 +26,7 @@ import { SAMPLE_COMPLAINT_IMAGES } from '../services/firebase';
 
 export default function ResidentDashboard() {
   const { currentUser } = useAuth();
-  const { tickets, submitTicket, activeCommunity, getNomenclature } = useCommunity();
+  const { tickets, submitTicket, upvoteTicket, activeCommunity, getNomenclature } = useCommunity();
   const nom = getNomenclature();
 
   // Form State
@@ -330,6 +330,7 @@ export default function ResidentDashboard() {
                 ticket={ticket}
                 currentRole="resident"
                 currentUserId={currentUser?.uid}
+                onUpvote={(id) => upvoteTicket(id)}
               />
             ))}
           </div>

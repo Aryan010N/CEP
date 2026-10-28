@@ -229,7 +229,7 @@ Return ONLY a valid JSON object:
 
 
 async def generate_executive_report_gemini(community_name: str, tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Generate high-level administrative intelligence briefing for wardens/estate managers."""
+    """Generate high-level administrative intelligence briefing for Estate Admins."""
     total = len(tickets)
     critical_count = sum(1 for t in tickets if str(t.get("urgency", "")).lower() == "high")
     

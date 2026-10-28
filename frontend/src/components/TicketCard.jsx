@@ -12,7 +12,9 @@ import {
   ShieldCheck, 
   Sparkles, 
   XCircle,
-  Maximize2
+  Maximize2,
+  ThumbsUp,
+  Award
 } from 'lucide-react';
 import Modal from './Modal';
 import { useCommunity } from '../context/CommunityContext';
@@ -30,7 +32,8 @@ export default function TicketCard({
   currentUserId,
   onRepVerify, 
   onRepReject, 
-  onAdminUpdate 
+  onAdminUpdate,
+  onUpvote 
 }) {
   const { getNomenclature } = useCommunity();
   const nom = getNomenclature(ticket.community_id);
@@ -72,7 +75,8 @@ export default function TicketCard({
   const handleAdminSubmit = (e) => {
     e.preventDefault();
     if (onAdminUpdate) {
-      onAdminUpdate(ticket.ticket_id, {
+      onAdminUpdate,
+  onUpvote(ticket.ticket_id, {
         status: adminStatus,
         assigned_worker: adminWorker,
         admin_notes: adminNotes
@@ -187,7 +191,8 @@ export default function TicketCard({
           <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px]">
             {ticket.verified_by && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 font-medium">
-                <ShieldCheck className="w-3 h-3" />
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                <span className="ml-1 px-1 py-0.5 rounded bg-emerald-500/20 text-[9px] text-emerald-300 font-bold inline-flex items-center gap-0.5"><Award className="w-2.5 h-2.5" /> Wing Leader</span>
                 Verified: {ticket.verified_by}
               </span>
             )}
@@ -202,7 +207,17 @@ export default function TicketCard({
       </div>
 
       {/* Action Footer depending on Role */}
-      <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+      <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => onUpvote && onUpvote(ticket.ticket_id)}
+          className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors touch-press shrink-0"
+          title="Upvote / confirm this issue affects you too"
+        >
+          <ThumbsUp className="w-3.5 h-3.5 text-indigo-400" />
+          <span>{ticket.upvotes || 0}</span>
+          <span className="hidden sm:inline text-[10px] text-slate-400">Upvotes</span>
+        </button>
         {/* Verifier Action Controls */}
         {currentRole === 'wing_rep' && ticket.status === 'Submitted' && (
           <div className="flex items-center gap-2 w-full">

@@ -23,7 +23,7 @@ import {
 
 export default function AdminDashboard({ currentTab = 'admin_dashboard' }) {
   const { currentUser } = useAuth();
-  const { tickets, updateTicketByAdmin, activeCommunity, getNomenclature } = useCommunity();
+  const { tickets, updateTicketByAdmin, upvoteTicket, activeCommunity, getNomenclature } = useCommunity();
   const nom = getNomenclature();
 
   const [selectedWingFilter, setSelectedWingFilter] = useState('All');
@@ -236,6 +236,7 @@ export default function AdminDashboard({ currentTab = 'admin_dashboard' }) {
                 currentRole="admin"
                 currentUserId={currentUser?.uid}
                 onAdminUpdate={handleAdminUpdate}
+                onUpvote={(id) => upvoteTicket(id)}
               />
             ))}
           </div>

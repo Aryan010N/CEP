@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/reports", tags=["Reports & Analytics"])
 @router.post("/generate", response_model=ReportGenerateResponse)
 async def generate_report(payload: ReportGenerateRequest):
     """
-    Generate an AI-powered executive briefing and breakdown of complaints for Estate Managers and Wardens.
+    Generate an AI-powered executive briefing and breakdown of complaints for Estate Admins.
     """
     try:
         result = await generate_executive_report_gemini(

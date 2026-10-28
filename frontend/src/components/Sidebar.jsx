@@ -39,21 +39,25 @@ export default function Sidebar({ currentTab, setCurrentTab }) {
       { id: 'resident_dashboard', label: `${nom.reporter_label} Portal`, icon: Home },
       { id: 'community_feed', label: 'Community Live Board', icon: Layers },
       { id: 'ngo_marketplace', label: 'NGO Problem Hub', icon: Award, count: openChallengesCount },
+      { id: 'scoreboard', label: 'Credits & Scoreboard', icon: Sparkles },
     ],
     wing_rep: [
       { id: 'rep_backlog', label: `${nom.verifier_label} Queue`, icon: ShieldCheck, count: pendingRepTickets, highlight: true },
       { id: 'community_feed', label: 'All Community Tickets', icon: Layers },
       { id: 'ngo_marketplace', label: 'NGO Problem Hub', icon: Award, count: openChallengesCount },
+      { id: 'scoreboard', label: 'Credits & Scoreboard', icon: Sparkles },
     ],
     admin: [
       { id: 'admin_dashboard', label: `${nom.authority_label} Hub`, icon: Home, count: totalActiveTickets },
       { id: 'admin_analytics', label: 'AI Analytics & Reports', icon: BarChart3 },
       { id: 'community_feed', label: 'Aggregated Feed', icon: Layers },
       { id: 'ngo_marketplace', label: 'NGO Challenges Hub', icon: Award, count: openChallengesCount },
+      { id: 'scoreboard', label: 'Credits & Scoreboard', icon: Sparkles },
     ],
     ngo: [
       { id: 'ngo_marketplace', label: 'NGO Marketplace', icon: Award },
       { id: 'community_feed', label: 'Observatory Feed', icon: Layers },
+      { id: 'scoreboard', label: 'Credits & Scoreboard', icon: Sparkles },
     ]
   };
 

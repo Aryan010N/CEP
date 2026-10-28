@@ -69,7 +69,7 @@ async function runBrowserTest() {
 
     // 6. Switch to Admin Persona & Update Ticket Status
     console.log('5. Switching Persona to Estate Admin / Warden...');
-    const adminBtn = page.locator('button:has-text("3. ")').or(page.locator('button:has-text("Admin")')).or(page.locator('button:has-text("Chief Warden")')).first();
+    const adminBtn = page.locator('button:has-text("3. ")').or(page.locator('button:has-text("Estate Admin")')).or(page.locator('button:has-text("Admin")')).first();
     await adminBtn.click();
     await page.waitForTimeout(800);
 
