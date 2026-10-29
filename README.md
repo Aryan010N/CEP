@@ -16,18 +16,18 @@ It directly connects Residents, Wing Representatives, Estate Administrators, and
 
 ---
 
-## 🔑 Standard Pre-Seeded Accounts (Direct Login)
+## 👥 User Roles & Access Architecture
 
-Use these credentials to log in and inspect the dedicated dashboards for each role:
+The platform enforces a role-based access control (RBAC) model across 4 primary stakeholder identities:
 
-| Persona / Role | Email Address | Password | Landing Route | Key Capabilities |
-|---|---|---|---|---|
-| **Resident / Student** | `aarav@cep.demo` | `Password123!` | `/dashboard` | Log complaints, attach photo evidence, upvote issues, claim NGO challenges |
-| **Wing Representative** | `vikram@cep.demo` | `Password123!` | `/rep` | Inspect wing complaints, filter spam, verify & escalate with SMS trigger |
-| **Estate Admin** | `rajesh@cep.demo` | `Password123!` | `/admin` | Review verified backlog, assign maintenance crews, update status, AI brief |
-| **NGO Partner** | `anita@cep.demo` | `Password123!` | `/challenges` | Publish community challenges, award CEP academic credits & certificates |
+| Role Identity | Primary Portal Route | Key Operational Capabilities |
+|---|---|---|
+| **Resident / Student** | `/dashboard` | Log complaints, attach photo evidence, upvote open issues, claim NGO challenges, earn CEP credits |
+| **Wing Representative** | `/rep` | Inspect wing complaints, filter invalid reports, verify & escalate authentic issues with automated alerts |
+| **Estate Admin** | `/admin` | Review verified backlog across all wings, assign maintenance crews, update status, AI management briefs |
+| **NGO Partner** | `/challenges` | Publish community challenges, evaluate student deliverables, award CEP academic credits & certificates |
 
-*(New accounts can also be created anytime using the `/signup` form with live Zod email/phone validation and QR code onboarding).*
+Users can register new accounts anytime via [`/signup`](https://cep-seven.vercel.app/signup) with real-time Zod email and phone validation, or join a specific wing directly via QR code onboarding.
 
 ---
 
@@ -108,38 +108,37 @@ Follow these exact steps to configure all free microservices:
 - **Web App Configuration:**
   - Copy the Firebase Web SDK credentials into `frontend/.env` (API Key, Auth Domain, Project ID).
 
-### 2. Google Gemini AI (100% Free Tier)
-- **Get Key:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-- **Tier:** 15 Requests Per Minute / 1,500 Requests Per Day for free on `gemini-1.5-flash` or `gemini-2.0-flash`.
-- **Backend Setup:** Add to `backend/.env`:
+### 2. Google Gemini AI (Verified & Active)
+- **Status:** **Active & Verified** (HTTP 200 with `gemini-flash-lite-latest` and `gemma-4-26b-a4b-it`).
+- **Capabilities:** Automatic categorization (`Electrical`, `Plumbing`, `Sanitation`, `General`), urgency scoring (`Low`, `Medium`, `High`), and semantic deduplication.
+- **Backend Setup (`backend/.env`):**
   ```env
-  GEMINI_API_KEY=AIzaSy...your_gemini_key_here
+  GEMINI_API_KEY=your_gemini_api_key_here
   ```
 
-### 3. Twilio SMS & WhatsApp (Free Trial)
-- **Sign Up:** [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio) (includes $15.50 in free trial balance).
-- **Console Values:**
-  - `TWILIO_ACCOUNT_SID`: Found on your Twilio Dashboard.
-  - `TWILIO_AUTH_TOKEN`: Found on your Twilio Dashboard.
-  - `TWILIO_PHONE_NUMBER`: Your free trial Twilio phone number.
-  - `TWILIO_WHATSAPP_NUMBER`: `+14155238886` (Twilio WhatsApp Sandbox).
-- **Backend Setup:** Add to `backend/.env`:
-  ```env
-  TWILIO_ACCOUNT_SID=AC...
-  TWILIO_AUTH_TOKEN=...
-  TWILIO_PHONE_NUMBER=+1...
-  TWILIO_WHATSAPP_NUMBER=+14155238886
-  ```
-  *(If credentials are not provided, the backend automatically runs in simulated dispatch mode with sliding-window rate limiting of 5 SMS/min).*
+### 3. Twilio SMS & WhatsApp Gateway (Verified)
+- **Status:** **Active Trial Account Verified**.
+- **Where to find the Phone Number:**
+  1. Log in to [Twilio Console](https://console.twilio.com/).
+  2. On the main Dashboard under **Account Info**, click **"Get a trial phone number"** (or go to **Phone Numbers** > **Manage** > **Active numbers**).
+  3. Twilio instantly assigns a free phone number (e.g., `+1844...`).
+  4. Paste this into `backend/.env` as `TWILIO_PHONE_NUMBER=+1...`.
+- **Is this valid in India? (Critical Constraints & Solutions):**
+  - **A2P SMS to Indian Numbers (+91):** In India, **TRAI (Telecom Regulatory Authority of India)** enforces **DLT (Distributed Ledger Technology)** registration. International A2P SMS from US virtual numbers to Indian phone numbers may be filtered by Indian operators (Jio, Airtel, Vi) unless whitelisted. Additionally, on Twilio Free Trial, SMS can only be sent to numbers you verify in Twilio Console under **Verified Caller IDs**.
+  - **The Reliable Solution for India: Twilio WhatsApp Sandbox (100% Free):**
+    Twilio's WhatsApp Sandbox (`+14155238886`) is fully functional in India without TRAI DLT blocks!
+    1. In Twilio Console, go to **Messaging** > **Try it out** > **Send a WhatsApp message**.
+    2. Send the displayed prompt (e.g. `join <sandbox-word>`) from your WhatsApp to `+14155238886`.
+    3. The CEP Observatory automatically dispatches real-time WhatsApp alerts directly to your phone.
+    4. Pre-configured: `TWILIO_WHATSAPP_NUMBER=+14155238886`.
 
-### 4. Resend Automated Emails (100% Free Tier)
-- **Sign Up:** [https://resend.com/](https://resend.com/) (3,000 free emails per month).
-- **API Key:** Create an API Key under **API Keys**.
-- **Backend Setup:** Add to `backend/.env`:
+### 4. Resend Automated Email Engine (Verified & Active)
+- **Status:** **Active & Verified** (Live transactional emails enabled).
+- **Domain Constraint:** Free tier accounts without a custom verified DNS domain must send from the verified test sender: `Observatory <onboarding@resend.dev>` (configured by default). To use your own domain (e.g., `notifications@yourcampus.edu`), verify your domain under Resend > **Domains**.
+- **Backend Setup (`backend/.env`):**
   ```env
-  RESEND_API_KEY=re_...
+  RESEND_API_KEY=your_resend_api_key_here
   ```
-  *(Simulated dispatch logger operates automatically if Resend key is omitted).*
 
 ---
 

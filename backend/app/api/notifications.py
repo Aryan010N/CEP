@@ -4,6 +4,9 @@ from typing import Optional, Dict, Any
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+load_dotenv(encoding='utf-8')
 
 router = APIRouter(prefix="/api/notifications", tags=["Notifications & Alerts"])
 
@@ -203,7 +206,7 @@ async def send_email_notification(payload: EmailNotificationRequest):
                         "Content-Type": "application/json"
                     },
                     json={
-                        "from": "CEP Observatory <notifications@cep-observatory.org>",
+                        "from": os.getenv("RESEND_FROM_EMAIL", "Observatory <onboarding@resend.dev>"),
                         "to": [clean_email],
                         "subject": payload.subject,
                         "html": f"<div style='font-family: system-ui, sans-serif; padding: 24px; color: #0f172a; max-width: 600px; margin: auto;'>"

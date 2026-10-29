@@ -14,7 +14,7 @@ if GEMINI_API_KEY:
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
-        gemini_model = genai.GenerativeModel("gemini-3.8-flash")
+        gemini_model = genai.GenerativeModel("gemini-flash-lite-latest")
     except Exception as e:
         print(f"Warning: Failed to initialize Google Generative AI client: {e}")
 
