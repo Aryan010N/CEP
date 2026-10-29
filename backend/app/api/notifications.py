@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/notifications", tags=["Notifications & Alerts"])
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
-TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "+14155238886")
+TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "+17372508034")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # In-Memory Sliding-Window Rate Limiter
@@ -79,7 +79,11 @@ async def send_sms_alert(payload: SMSNotificationRequest):
 
     start_time = time.time()
     
-    # Real Twilio API Integration
+    # If channel is WhatsApp or SMS phone number is omitted, seamlessly route to WhatsApp
+    if payload.channel == "whatsapp" or not TWILIO_PHONE_NUMBER:
+        return await send_whatsapp_alert(payload)
+
+    # Real Twilio SMS API Integration
     if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
         try:
             import httpx

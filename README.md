@@ -116,21 +116,23 @@ Follow these exact steps to configure all free microservices:
   GEMINI_API_KEY=your_gemini_api_key_here
   ```
 
-### 3. Twilio SMS & WhatsApp Gateway (Verified)
-- **Status:** **Active Trial Account Verified**.
-- **Where to find the Phone Number:**
-  1. Log in to [Twilio Console](https://console.twilio.com/).
-  2. On the main Dashboard under **Account Info**, click **"Get a trial phone number"** (or go to **Phone Numbers** > **Manage** > **Active numbers**).
-  3. Twilio instantly assigns a free phone number (e.g., `+1844...`).
-  4. Paste this into `backend/.env` as `TWILIO_PHONE_NUMBER=+1...`.
-- **Is this valid in India? (Critical Constraints & Solutions):**
-  - **A2P SMS to Indian Numbers (+91):** In India, **TRAI (Telecom Regulatory Authority of India)** enforces **DLT (Distributed Ledger Technology)** registration. International A2P SMS from US virtual numbers to Indian phone numbers may be filtered by Indian operators (Jio, Airtel, Vi) unless whitelisted. Additionally, on Twilio Free Trial, SMS can only be sent to numbers you verify in Twilio Console under **Verified Caller IDs**.
-  - **The Reliable Solution for India: Twilio WhatsApp Sandbox (100% Free):**
-    Twilio's WhatsApp Sandbox (`+14155238886`) is fully functional in India without TRAI DLT blocks!
-    1. In Twilio Console, go to **Messaging** > **Try it out** > **Send a WhatsApp message**.
-    2. Send the displayed prompt (e.g. `join <sandbox-word>`) from your WhatsApp to `+14155238886`.
-    3. The CEP Observatory automatically dispatches real-time WhatsApp alerts directly to your phone.
-    4. Pre-configured: `TWILIO_WHATSAPP_NUMBER=+14155238886`.
+### 3. Twilio WhatsApp Gateway (Active & Verified for India)
+- **Status:** **Active Trial Account Verified** (WhatsApp Sandbox enabled).
+- **Communication Mode:** In alignment with Indian telecom guidelines (bypassing TRAI DLT SMS restrictions), virtual SMS phone numbers are skipped in favor of **instant, free WhatsApp alerts**.
+- **Sandbox Details:**
+  - **Twilio WhatsApp Number:** `+1 737 250 8034`
+  - **Join Code:** `join twilio-trial`
+- **How Authorities Receive WhatsApp Alerts:**
+  1. Open WhatsApp on your phone.
+  2. Send `join twilio-trial` to `+1 737 250 8034`.
+  3. Once connected, whenever a Wing Representative verifies a maintenance defect, the Observatory dispatches an instant emergency alert directly to WhatsApp within 3 seconds!
+- **Backend Setup (`backend/.env`):**
+  ```env
+  TWILIO_ACCOUNT_SID=your_twilio_account_sid
+  TWILIO_AUTH_TOKEN=your_twilio_auth_token
+  TWILIO_PHONE_NUMBER=
+  TWILIO_WHATSAPP_NUMBER=+17372508034
+  ```
 
 ### 4. Resend Automated Email Engine (Verified & Active)
 - **Status:** **Active & Verified** (Live transactional emails enabled).

@@ -270,7 +270,7 @@ export default function Register({ onSwitchToLogin, onClose }) {
                 className={`w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border ${errors.phone ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-700'} text-slate-100 text-xs focus:outline-none focus:border-indigo-500`}
               />
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5 ml-1">For critical maintenance & verification SMS alerts</p>
+            <p className="text-[10px] text-slate-500 mt-0.5 ml-1">For critical maintenance & WhatsApp alerts</p>
             {errors.phone && <p className="text-rose-400 text-[10px] mt-1 ml-1 font-semibold">{errors.phone}</p>}
           </div>
         </div>

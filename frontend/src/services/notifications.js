@@ -1,4 +1,4 @@
-// Notification Dispatch Client for SMS (Twilio), WhatsApp, and Email (Resend)
+// Notification Dispatch Client for WhatsApp (Twilio) and Email (Resend)
 import { getBackendUrl } from './firebase';
 
 const getBaseUrl = () => {
@@ -6,38 +6,43 @@ const getBaseUrl = () => {
 };
 
 /**
- * Dispatch an SMS alert to authorities within 30s of Wing Rep verification
+ * Dispatch an automated WhatsApp alert to authorities within 30s of Wing Rep verification
  */
-export async function dispatchVerificationSMS({ toPhone, ticketId, title, wing, verifierName, urgency = "High" }) {
+export async function dispatchVerificationAlert({ toPhone, ticketId, title, wing, verifierName, urgency = "High" }) {
   const BACKEND_URL = getBaseUrl();
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    const response = await fetch(`${BACKEND_URL}/api/notifications/sms`, {
+    const response = await fetch(`${BACKEND_URL}/api/notifications/whatsapp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         to_phone: toPhone || '+91 98765 99999',
         message: `🚨 [CEP Observatory] URGENT ${urgency.toUpperCase()} Issue in ${wing}: "${title}" has been VERIFIED by ${verifierName} and escalated to Estate Admin for maintenance dispatch.`,
         ticket_id: ticketId,
-        urgency: urgency
+        urgency: urgency,
+        channel: 'whatsapp'
       }),
       signal: controller.signal
     });
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      console.warn("SMS notification endpoint responded with status:", response.status);
+      console.warn("WhatsApp notification endpoint responded with status:", response.status);
       return { status: "simulated", simulated: true };
     }
     
     return await response.json();
   } catch (error) {
-    console.warn("SMS dispatch notice (backend offline or simulated):", error?.message);
+    console.warn("WhatsApp dispatch notice (backend offline or simulated):", error?.message);
     return { status: "simulated", simulated: true };
   }
 }
+
+// Backwards-compatible aliases
+export const dispatchVerificationSMS = dispatchVerificationAlert;
+export const dispatchVerificationWhatsApp = dispatchVerificationAlert;
 
 /**
  * Dispatch an Email alert for ticket status updates (In Progress, Resolved, etc.)

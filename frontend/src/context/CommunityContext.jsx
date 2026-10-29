@@ -404,7 +404,7 @@ export function CommunityProvider({ children }) {
     }));
 
     if (isApproved) {
-      showToast(`Ticket #${ticketId} verified! SMS alert dispatched to ${currentNom.authority_label} within 30s.`, "success");
+      showToast(`Ticket #${ticketId} verified! WhatsApp alert & email dispatched to ${currentNom.authority_label} within 30s.`, "success");
       
       dispatchVerificationSMS({
         toPhone: '+91 98765 99999',

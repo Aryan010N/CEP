@@ -65,7 +65,7 @@ export default function LandingPage({ initialMode = 'login', onSwitchMode, onAut
                 <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 </span>
-                <span><strong>Instant Alerts:</strong> Automated SMS to authorities & email updates to residents</span>
+                <span><strong>Instant Alerts:</strong> Automated WhatsApp to authorities & email updates to residents</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-300">
                 <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0">
