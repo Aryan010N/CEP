@@ -48,8 +48,20 @@ export default function ResidentDashboard() {
     (t.resident_name && currentUser?.name && t.resident_name.includes(currentUser.name.split(' ')[0]))
   );
   
-  const activeCount = myTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Rejected').length;
-  const resolvedCount = myTickets.filter(t => t.status === 'Resolved').length;
+  const [residentTab, setResidentTab] = useState('active'); // 'active' | 'history'
+  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'resolved' | 'rejected'
+
+  const activeTickets = myTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Rejected');
+  const resolvedTickets = myTickets.filter(t => t.status === 'Resolved');
+  const rejectedTickets = myTickets.filter(t => t.status === 'Rejected');
+  const historyTickets = myTickets.filter(t => t.status === 'Resolved' || t.status === 'Rejected');
+
+  let displayHistoryTickets = historyTickets;
+  if (historyFilter === 'resolved') displayHistoryTickets = resolvedTickets;
+  if (historyFilter === 'rejected') displayHistoryTickets = rejectedTickets;
+
+  const activeCount = activeTickets.length;
+  const resolvedCount = resolvedTickets.length;
 
   // Preset Scenarios for 1-click testing
   const sampleScenarios = [
@@ -397,37 +409,119 @@ export default function ResidentDashboard() {
         </form>
       </div>
 
-      {/* Resident's Active Ticket Feed */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-100 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-indigo-400" />
-            My Reported Issues ({myTickets.length})
-          </h3>
+      {/* Resident Ticket Feed with Dedicated Active vs History Separation */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-900/90 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setResidentTab('active')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold touch-press transition-all flex items-center gap-1.5 ${
+                residentTab === 'active' 
+                  ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Active Issues ({activeTickets.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setResidentTab('history')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold touch-press transition-all flex items-center gap-1.5 ${
+                residentTab === 'history' 
+                  ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>History & Past Records ({historyTickets.length})</span>
+            </button>
+          </div>
+
           <span className="text-[11px] text-slate-400">
             Real-Time Sync Active
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {myTickets.map(ticket => (
-            <TicketCard
-              key={ticket.ticket_id || ticket.id}
-              ticket={ticket}
-              currentRole="resident"
-              currentUserId={currentUser?.uid}
-              onUpvote={() => upvoteTicket(ticket.ticket_id || ticket.id)}
-            />
-          ))}
+        {/* History Sub-Filter Pills (visible only when in History tab) */}
+        {residentTab === 'history' && (
+          <div className="flex items-center gap-1.5 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('all')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                historyFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              All History ({historyTickets.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('resolved')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                historyFilter === 'resolved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Resolved ({resolvedTickets.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryFilter('rejected')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                historyFilter === 'rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Closed / Rejected ({rejectedTickets.length})
+            </button>
+          </div>
+        )}
 
-          {myTickets.length === 0 && (
-            <div className="col-span-full glass-panel p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-800">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400/80 mx-auto" />
-              <p className="text-sm font-semibold text-slate-200">No open complaints from your unit</p>
-              <p className="text-xs">If you notice any maintenance defect, log it above for instant escalation.</p>
-            </div>
-          )}
-        </div>
+        {/* Active Issues Grid */}
+        {residentTab === 'active' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {activeTickets.map(ticket => (
+              <TicketCard
+                key={ticket.ticket_id || ticket.id}
+                ticket={ticket}
+                currentRole="resident"
+                currentUserId={currentUser?.uid}
+                onUpvote={() => upvoteTicket(ticket.ticket_id || ticket.id)}
+              />
+            ))}
+
+            {activeTickets.length === 0 && (
+              <div className="col-span-full glass-panel p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-800">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400/80 mx-auto" />
+                <p className="text-sm font-semibold text-slate-200">No active issues in your unit pipeline</p>
+                <p className="text-xs">All previously reported issues have been resolved or closed. Check the History tab for past records.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* History Issues Grid */}
+        {residentTab === 'history' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {displayHistoryTickets.map(ticket => (
+              <TicketCard
+                key={ticket.ticket_id || ticket.id}
+                ticket={ticket}
+                currentRole="resident"
+                currentUserId={currentUser?.uid}
+                onUpvote={() => upvoteTicket(ticket.ticket_id || ticket.id)}
+              />
+            ))}
+
+            {displayHistoryTickets.length === 0 && (
+              <div className="col-span-full glass-panel p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-800">
+                <Clock className="w-8 h-8 text-slate-500 mx-auto" />
+                <p className="text-sm font-semibold text-slate-200">No past records matching this filter</p>
+                <p className="text-xs">Resolved and closed tickets from your unit will appear here.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

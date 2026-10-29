@@ -22,7 +22,8 @@ export default function WingRepDashboard() {
   const nom = getNomenclature();
 
   const [selectedWing, setSelectedWing] = useState(currentUser?.wing || activeCommunity?.wings?.[0] || 'All');
-  const [filterTab, setFilterTab] = useState('pending'); // 'pending' | 'verified' | 'all'
+  const [repTab, setRepTab] = useState('pending'); // 'pending' | 'history'
+  const [historySubFilter, setHistorySubFilter] = useState('all'); // 'all' | 'escalated' | 'resolved' | 'rejected'
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter by active community and assigned division
@@ -36,14 +37,14 @@ export default function WingRepDashboard() {
   const escalatedTickets = divisionTickets.filter(t => t.status === 'Verified_By_Rep' || t.status === 'Assigned' || t.status === 'In_Progress');
   const resolvedTickets = divisionTickets.filter(t => t.status === 'Resolved');
   const rejectedTickets = divisionTickets.filter(t => t.status === 'Rejected');
+  const historyTickets = divisionTickets.filter(t => t.status !== 'Submitted');
 
-  let displayTickets = divisionTickets;
-  if (filterTab === 'pending') {
-    displayTickets = pendingTickets;
-  } else if (filterTab === 'verified') {
-    displayTickets = escalatedTickets;
-  } else if (filterTab === 'resolved') {
-    displayTickets = resolvedTickets;
+  let displayTickets = pendingTickets;
+  if (repTab === 'history') {
+    if (historySubFilter === 'escalated') displayTickets = escalatedTickets;
+    else if (historySubFilter === 'resolved') displayTickets = resolvedTickets;
+    else if (historySubFilter === 'rejected') displayTickets = rejectedTickets;
+    else displayTickets = historyTickets;
   }
 
   if (searchTerm.trim()) {
@@ -141,40 +142,66 @@ export default function WingRepDashboard() {
           </div>
         </div>
 
-        {/* Tab Selector */}
-        <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex-wrap">
-          <button
-            onClick={() => setFilterTab('pending')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold touch-press transition-all ${
-              filterTab === 'pending' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Pending Verification ({pendingTickets.length})
-          </button>
-          <button
-            onClick={() => setFilterTab('verified')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold touch-press transition-all ${
-              filterTab === 'verified' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Escalated ({escalatedTickets.length})
-          </button>
-          <button
-            onClick={() => setFilterTab('resolved')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold touch-press transition-all ${
-              filterTab === 'resolved' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Resolved ({resolvedTickets.length})
-          </button>
-          <button
-            onClick={() => setFilterTab('all')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold touch-press transition-all ${
-              filterTab === 'all' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            All History ({divisionTickets.length})
-          </button>
+        {/* Primary Role Tab Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex-wrap">
+            <button
+              onClick={() => setRepTab('pending')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold touch-press transition-all flex items-center gap-1.5 ${
+                repTab === 'pending' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/30' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Pending Verification ({pendingTickets.length})</span>
+            </button>
+            <button
+              onClick={() => setRepTab('history')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold touch-press transition-all flex items-center gap-1.5 ${
+                repTab === 'history' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/30' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Verification History ({historyTickets.length})</span>
+            </button>
+          </div>
+
+          {/* Sub-Filters inside History Tab */}
+          {repTab === 'history' && (
+            <div className="flex items-center gap-1.5 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 flex-wrap">
+              <button
+                onClick={() => setHistorySubFilter('all')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                  historySubFilter === 'all' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                All Past ({historyTickets.length})
+              </button>
+              <button
+                onClick={() => setHistorySubFilter('escalated')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                  historySubFilter === 'escalated' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Escalated ({escalatedTickets.length})
+              </button>
+              <button
+                onClick={() => setHistorySubFilter('resolved')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                  historySubFilter === 'resolved' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Resolved ({resolvedTickets.length})
+              </button>
+              <button
+                onClick={() => setHistorySubFilter('rejected')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                  historySubFilter === 'rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Rejected / Spam ({rejectedTickets.length})
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Search */}

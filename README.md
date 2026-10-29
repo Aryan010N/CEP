@@ -39,6 +39,15 @@ Use these pre-seeded accounts to verify the complete multi-tier workflow instant
 | **Estate Admin (Dispatcher)** | Rajesh Admin | `rajesh@cep.demo` | `Password123!` | Emerald Heights Hostel | [`/admin`](https://cep-seven.vercel.app/admin) |
 | **NGO Partner** | Anita NGO | `anita@cep.demo` | `Password123!` | Clean India Mission Hub | [`/challenges`](https://cep-seven.vercel.app/challenges) |
 
+### 🗂️ Clean Role-Focused Action Views & Dedicated History Tabs
+To avoid overwhelming users with past issues, all dashboards prioritize **primary actionable tasks** first, with historical records isolated in a dedicated **History** tab:
+
+| Dashboard View | Primary Action View (Default) | Dedicated History Tab & Sub-Filters |
+|---|---|---|
+| **Resident** (`/dashboard`) | **Active Issues** (Only pending, verified, or in-progress complaints from the resident's unit) | **History & Past Records** (Filter by: `All History`, `Resolved`, `Closed / Rejected`) |
+| **Wing Rep** (`/rep`) | **Pending Verification** (Action items awaiting on-site physical check in their assigned wing) | **Verification History** (Filter by: `All Past`, `Escalated to Admin`, `Resolved`, `Rejected / Spam`) |
+| **Estate Admin** (`/admin`) | **Action Required: Dispatch Queue** (Verified issues awaiting crew assignment & in-progress work) | **Complete Community History** (Filter by: `All Records`, `Resolved`, `In Progress`, `Verified`, `Submitted`, `Rejected`) |
+
 ---
 
 ## 🔄 End-to-End Problem Lifecycle Workflow
