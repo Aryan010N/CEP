@@ -29,6 +29,16 @@ The platform enforces a role-based access control (RBAC) model across 4 primary 
 
 Users can register new accounts anytime via [`/signup`](https://cep-seven.vercel.app/signup) with real-time Zod email and phone validation, or join a specific wing directly via QR code onboarding.
 
+### 🔑 Verified Community Test Accounts (Hostel `comm_emerald_1`)
+Use these pre-seeded accounts to verify the complete multi-tier workflow instantly:
+
+| Role | Name | Email | Password | Wing / Scope | Dedicated Route |
+|---|---|---|---|---|---|
+| **Resident / Problem Uploader** | Aarav Resident | `aarav@cep.demo` | `Password123!` | Wing A (Room A-304) | [`/dashboard`](https://cep-seven.vercel.app/dashboard) |
+| **Wing Representative (Verifier)** | Vikram Rep | `vikram@cep.demo` | `Password123!` | Wing A | [`/rep`](https://cep-seven.vercel.app/rep) |
+| **Estate Admin (Dispatcher)** | Rajesh Admin | `rajesh@cep.demo` | `Password123!` | Emerald Heights Hostel | [`/admin`](https://cep-seven.vercel.app/admin) |
+| **NGO Partner** | Anita NGO | `anita@cep.demo` | `Password123!` | Clean India Mission Hub | [`/challenges`](https://cep-seven.vercel.app/challenges) |
+
 ---
 
 ## 🔄 End-to-End Problem Lifecycle Workflow
@@ -110,7 +120,11 @@ Follow these exact steps to configure all free microservices:
 
 ### 2. Google Gemini AI (Verified & Active)
 - **Status:** **Active & Verified** (HTTP 200 with `gemini-flash-lite-latest` and `gemma-4-26b-a4b-it`).
-- **Capabilities:** Automatic categorization (`Electrical`, `Plumbing`, `Sanitation`, `General`), urgency scoring (`Low`, `Medium`, `High`), and semantic deduplication.
+- **Capabilities:**
+  - **Multimodal Vision Defect Diagnosis (`POST /api/tickets/diagnose-image`):** Automatically inspects uploaded/captured defect photos and generates problem title, detailed description, category, and urgency level so residents do not need to type descriptions manually.
+  - **Autonomous Categorization (`POST /api/tickets/analyze`):** Auto-tags trade trade category (`Electrical`, `Plumbing`, `Sanitation`, `General`) and urgency (`Low`, `Medium`, `High`).
+  - **Semantic Deduplication (`POST /api/tickets/deduplicate`):** Evaluates physical and semantic equivalence against active community tickets to prevent report duplication.
+  - **Executive Intelligence Synthesis (`POST /api/tickets/admin-report`):** Generates actionable briefing summaries and resource allocation recommendations for Estate Admins.
 - **Backend Setup (`backend/.env`):**
   ```env
   GEMINI_API_KEY=your_gemini_api_key_here

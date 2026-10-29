@@ -18,6 +18,23 @@ class TicketAnalysisResponse(BaseModel):
     suggested_action: str = Field(..., description="Recommended initial action or personnel needed")
     translated_text: Optional[str] = Field(None, description="English translation if original was non-English")
 
+class TicketVisionDiagnosisRequest(BaseModel):
+    image_base64: str = Field(..., description="Base64 encoded photo of the defect or problem")
+    user_notes: Optional[str] = Field("", description="Optional short notes provided by the user")
+    wing: Optional[str] = Field("Wing A", description="Wing / block of the resident")
+    community_id: Optional[str] = Field("comm_emerald_1", description="Community ID")
+
+class TicketVisionDiagnosisResponse(BaseModel):
+    title: str = Field(..., description="AI suggested problem title")
+    description: str = Field(..., description="AI suggested problem description")
+    category: Literal["Electrical", "Plumbing", "Sanitation", "General"] = Field(
+        ..., description="Classified trade category"
+    )
+    urgency: Literal["Low", "Medium", "High"] = Field(
+        ..., description="Urgency priority level"
+    )
+    suggested_action: str = Field(..., description="Actionable maintenance team instruction")
+
 class ComplaintItem(BaseModel):
     ticket_id: Optional[str] = "TICK-PREV"
     text: str

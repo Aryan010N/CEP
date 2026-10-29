@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import base64
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
@@ -17,6 +18,22 @@ if GEMINI_API_KEY:
         gemini_model = genai.GenerativeModel("gemini-flash-lite-latest")
     except Exception as e:
         print(f"Warning: Failed to initialize Google Generative AI client: {e}")
+
+
+def _parse_base64_image(image_base64: str) -> tuple:
+    """Extract mime type and raw bytes from data URL or plain base64."""
+    mime_type = "image/jpeg"
+    raw_b64 = image_base64.strip()
+    if "," in raw_b64 and "data:" in raw_b64:
+        header, raw_b64 = raw_b64.split(",", 1)
+        if "image/png" in header:
+            mime_type = "image/png"
+        elif "image/webp" in header:
+            mime_type = "image/webp"
+        elif "image/jpeg" in header or "image/jpg" in header:
+            mime_type = "image/jpeg"
+    image_bytes = base64.b64decode(raw_b64)
+    return mime_type, image_bytes
 
 
 def _clean_json_string(text: str) -> str:
@@ -293,3 +310,93 @@ Return ONLY valid JSON:
                 "Review pending Wing Rep escalations."
             ]
         }
+
+
+async def diagnose_image_gemini(
+    image_base64: str,
+    user_notes: Optional[str] = "",
+    wing: Optional[str] = "Wing A",
+    community_id: Optional[str] = "comm_emerald_1"
+) -> Dict[str, Any]:
+    """
+    Multimodal diagnosis of attached defect/maintenance photo using Gemini 2.0 Flash.
+    Extracts title, detailed description, category, urgency, and suggested action automatically.
+    """
+    default_fallback = {
+        "title": "Reported Facility Defect",
+        "description": user_notes.strip() if user_notes else "Photo evidence uploaded for physical inspection by maintenance team.",
+        "category": "General",
+        "urgency": "Medium",
+        "suggested_action": "Conduct on-site physical inspection to confirm defect scope and schedule repairs."
+    }
+
+    if not gemini_model or not image_base64:
+        return default_fallback
+
+    try:
+        mime_type, image_bytes = _parse_base64_image(image_base64)
+        image_part = {
+            "mime_type": mime_type,
+            "data": image_bytes
+        }
+
+        notes_context = f"Resident's preliminary notes: {user_notes.strip()}" if user_notes and user_notes.strip() else "No extra notes provided by resident."
+
+        prompt = f"""
+You are the Computer Vision Maintenance Inspector for the AI Community Digital Problem Observatory.
+Examine this photograph submitted by a resident in {wing or 'the community'} ({community_id or 'comm_emerald_1'}).
+{notes_context}
+
+Your task:
+1. Identify the defect or hazard in the image (e.g. leaking pipe, exposed wiring, burnt socket, overflowing trash, broken door, damp ceiling, cracked tile, etc.).
+2. Generate:
+   - "title": A concise, descriptive headline for the defect (max 60 characters).
+   - "description": A thorough 2-3 sentence technical and situational description of the problem, visible symptoms, potential risks, and affected fixtures.
+   - "category": MUST be strictly one of ["Electrical", "Plumbing", "Sanitation", "General"].
+   - "urgency": MUST be strictly one of ["Low", "Medium", "High"]. (Mark High if fire, flood, collapse, or electrocution risk is evident).
+   - "suggested_action": Recommended action or specific technician tools/parts to dispatch.
+
+Return strictly valid JSON with no markdown wrapping:
+{{
+  "title": "<concise title>",
+  "description": "<detailed problem description>",
+  "category": "Electrical" | "Plumbing" | "Sanitation" | "General",
+  "urgency": "Low" | "Medium" | "High",
+  "suggested_action": "<actionable maintenance response>"
+}}
+"""
+        response = gemini_model.generate_content([image_part, prompt])
+        cleaned = _clean_json_string(response.text)
+        data = json.loads(cleaned)
+
+        valid_cats = ["Electrical", "Plumbing", "Sanitation", "General"]
+        valid_urg = ["Low", "Medium", "High"]
+
+        category = data.get("category", "General")
+        if category not in valid_cats:
+            category = "General"
+
+        urgency = data.get("urgency", "Medium")
+        if urgency not in valid_urg:
+            urgency = "Medium"
+
+        return {
+            "title": data.get("title", "Reported Facility Defect")[:120],
+            "description": data.get("description", default_fallback["description"]),
+            "category": category,
+            "urgency": urgency,
+            "suggested_action": data.get("suggested_action", default_fallback["suggested_action"])
+        }
+    except Exception as e:
+        print(f"Gemini image diagnosis failed, using heuristic: {e}")
+        # If user notes were provided, use heuristic classification
+        if user_notes and user_notes.strip():
+            h = _heuristic_classify_ticket(user_notes, user_notes)
+            return {
+                "title": user_notes[:60],
+                "description": user_notes,
+                "category": h["category"],
+                "urgency": h["urgency"],
+                "suggested_action": h["suggested_action"]
+            }
+        return default_fallback

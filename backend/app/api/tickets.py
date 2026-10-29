@@ -3,14 +3,36 @@ from app.models.schemas import (
     TicketAnalysisRequest,
     TicketAnalysisResponse,
     DeduplicationRequest,
-    DeduplicationResponse
+    DeduplicationResponse,
+    TicketVisionDiagnosisRequest,
+    TicketVisionDiagnosisResponse
 )
 from app.services.gemini_service import (
     analyze_ticket_gemini,
-    deduplicate_tickets_gemini
+    deduplicate_tickets_gemini,
+    diagnose_image_gemini
 )
 
 router = APIRouter(prefix="/api/tickets", tags=["Tickets & AI"])
+
+@router.post("/diagnose-image", response_model=TicketVisionDiagnosisResponse)
+async def diagnose_ticket_image(payload: TicketVisionDiagnosisRequest):
+    """
+    Multimodal Gemini vision analysis: inspect an attached photo of a problem,
+    and automatically extract title, detailed description, category, urgency,
+    and recommended maintenance action so residents don't need to type manually.
+    """
+    try:
+        result = await diagnose_image_gemini(
+            image_base64=payload.image_base64,
+            user_notes=payload.user_notes,
+            wing=payload.wing,
+            community_id=payload.community_id
+        )
+        return TicketVisionDiagnosisResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to diagnose image: {str(e)}")
+
 
 @router.post("/analyze", response_model=TicketAnalysisResponse)
 async def analyze_ticket(payload: TicketAnalysisRequest):

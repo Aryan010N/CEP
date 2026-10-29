@@ -311,49 +311,56 @@ export const subscribeChallenges = (onUpdate, onError) => {
 
 /**
  * Persist a new ticket into Cloud Firestore using modular v10+ setDoc with serverTimestamp.
- * Enforces a strict blocking AI deduplication gate against active community tickets.
+ * Performs AI deduplication assessment and stores duplicate telemetry with the ticket.
  */
-export const createTicketInFirestore = async (ticket, existingComplaints = []) => {
+export const createTicketInFirestore = async (ticket, existingComplaints = [], forceSubmit = false) => {
   if (!db) return ticket;
 
   const backendUrl = getBackendUrl();
-  try {
-    const formattedExisting = (existingComplaints || []).map(t => ({
-      ticket_id: t.ticket_id || t.id || 'TICK-PREV',
-      text: `${t.title || ''}. ${t.description || ''}`
-    }));
+  let isDuplicate = false;
+  let matchedTicketId = null;
+  let duplicateReason = null;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+  if (!forceSubmit && !ticket.forceSubmit) {
+    try {
+      const formattedExisting = (existingComplaints || []).map(t => ({
+        ticket_id: t.ticket_id || t.id || 'TICK-PREV',
+        text: `${t.title || ''}. ${t.description || ''}`
+      }));
 
-    const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        new_complaint: `${ticket.title}. ${ticket.description}`,
-        existing_complaints: formattedExisting
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    if (dedupResponse.ok) {
-      const dedupResult = await dedupResponse.json();
-      if (dedupResult.is_duplicate) {
-        throw new DuplicateTicketError(dedupResult.matched_ticket_id, dedupResult.reasoning);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          new_complaint: `${ticket.title}. ${ticket.description}`,
+          existing_complaints: formattedExisting
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (dedupResponse.ok) {
+        const dedupResult = await dedupResponse.json();
+        if (dedupResult.is_duplicate) {
+          isDuplicate = true;
+          matchedTicketId = dedupResult.matched_ticket_id;
+          duplicateReason = dedupResult.reasoning;
+        }
       }
+    } catch (error) {
+      console.warn("Deduplication check passed with client fallback:", error?.message);
     }
-  } catch (error) {
-    if (error instanceof DuplicateTicketError) {
-      throw error;
-    }
-    console.warn("Deduplication check passed with client fallback:", error?.message);
   }
 
   const docRef = doc(db, 'tickets', ticket.ticket_id);
   await setDoc(docRef, {
     ...ticket,
-    isDuplicate: false,
+    isDuplicate: isDuplicate || ticket.isDuplicate || false,
+    matched_ticket_id: matchedTicketId || ticket.matched_ticket_id || null,
+    duplicate_reason: duplicateReason || ticket.duplicate_reason || null,
     upvotes: ticket.upvotes || 0,
     upvoted_by: ticket.upvoted_by || [],
     server_created_at: serverTimestamp(),

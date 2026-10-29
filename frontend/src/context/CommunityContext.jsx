@@ -349,7 +349,7 @@ export function CommunityProvider({ children }) {
       const activeTickets = tickets.filter(t => t.community_id === newTicket.community_id && t.status !== 'Resolved');
       await createTicketInFirestore(newTicket, activeTickets);
     } catch (err) {
-      console.warn("Firestore submitTicket sync notice:", err.message);
+      console.warn("Firestore submitTicket notice:", err.message);
     }
 
     return newTicket;
