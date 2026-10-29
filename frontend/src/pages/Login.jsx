@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Sparkles, User, Lock, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, Sparkles, User, Lock, ArrowRight, CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -8,13 +8,21 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters')
 });
 
-export default function Login({ onSwitchToRegister, onClose }) {
-  const { login, isDemoMode } = useAuth();
+export default function Login({ onSwitchToRegister, onClose, onSuccess }) {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [globalError, setGlobalError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTestAccounts, setShowTestAccounts] = useState(true);
+
+  const testAccounts = [
+    { label: "Resident (Wing A)", name: "Aarav Resident", email: "aarav@cep.demo", roleBadge: "bg-indigo-900/40 text-indigo-300 border-indigo-500/30" },
+    { label: "Wing Representative", name: "Vikram Rep", email: "vikram@cep.demo", roleBadge: "bg-emerald-900/40 text-emerald-300 border-emerald-500/30" },
+    { label: "Estate Admin", name: "Rajesh Admin", email: "rajesh@cep.demo", roleBadge: "bg-purple-900/40 text-purple-300 border-purple-500/30" },
+    { label: "NGO Partner", name: "Anita NGO", email: "anita@cep.demo", roleBadge: "bg-teal-900/40 text-teal-300 border-teal-500/30" },
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,11 +30,10 @@ export default function Login({ onSwitchToRegister, onClose }) {
     setGlobalError('');
 
     try {
-      // Zod Validation
       loginSchema.parse({ email, password });
-      
       setIsLoading(true);
-      await login(email, password);
+      const user = await login(email, password);
+      if (onSuccess) onSuccess(user);
       if (onClose) onClose();
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -45,93 +52,52 @@ export default function Login({ onSwitchToRegister, onClose }) {
     }
   };
 
-  const handleQuickDemoSelect = async (demoEmail) => {
-    setEmail(demoEmail);
-    const demoPassword = 'CepDemo2024!';
-    setPassword(demoPassword);
-    
+  const handleSelectTestAccount = (accEmail) => {
+    setEmail(accEmail);
+    setPassword('Password123!');
     setErrors({});
     setGlobalError('');
-    setIsLoading(true);
-    
-    try {
-      await login(demoEmail, demoPassword);
-      if (onClose) onClose();
-    } catch (err) {
-      setGlobalError(err.message || 'Failed to authenticate. Please check your credentials.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+    <div className="w-full max-w-md mx-auto space-y-5">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 shadow-glow-indigo">
           <Shield className="w-6 h-6 text-white" />
         </div>
         <h2 className="text-2xl font-black tracking-tight text-slate-100">
-          Welcome to Observatory
+          Sign In to Observatory
         </h2>
         <p className="text-xs text-slate-400">
-          Sign in to access your community dashboard & AI problem tracking
+          Enter your account details to access your role-specific dashboard
         </p>
       </div>
 
-      {/* Quick Demo Logins for Assessment Evaluation */}
-      {isDemoMode && (
-        <>
-          <div className="p-4 rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-900/60 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                1-Click Evaluator Quick Fill:
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemoSelect('aarav@cep.demo')}
-                className="p-2 rounded-xl border border-indigo-500/20 bg-indigo-900/30 hover:bg-indigo-800/40 text-left transition-colors"
-              >
-                <p className="text-xs font-bold text-indigo-200">Aarav Sharma</p>
-                <p className="text-[10px] text-indigo-300/80">Resident (Wing A)</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoSelect('vikram@cep.demo')}
-                className="p-2 rounded-xl border border-emerald-500/20 bg-emerald-900/30 hover:bg-emerald-800/40 text-left transition-colors"
-              >
-                <p className="text-xs font-bold text-emerald-200">Vikram Malhotra</p>
-                <p className="text-[10px] text-emerald-300/80">Wing Rep (Wing A)</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoSelect('rajesh@cep.demo')}
-                className="p-2 rounded-xl border border-purple-500/20 bg-purple-900/30 hover:bg-purple-800/40 text-left transition-colors"
-              >
-                <p className="text-xs font-bold text-purple-200">Dr. Rajesh Iyer</p>
-                <p className="text-[10px] text-purple-300/80">Estate Admin</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoSelect('anita@cep.demo')}
-                className="p-2 rounded-xl border border-teal-500/20 bg-teal-900/30 hover:bg-teal-800/40 text-left transition-colors"
-              >
-                <p className="text-xs font-bold text-teal-200">Anita Deshmukh</p>
-                <p className="text-[10px] text-teal-300/80">GreenTech NGO Lead</p>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-800" />
-            <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Or enter credentials</span>
-            <div className="h-px flex-1 bg-slate-800" />
-          </div>
-        </>
-      )}
+      {/* Pre-Seeded Test Credentials Helper */}
+      <div className="p-3.5 rounded-2xl border border-slate-700/80 bg-slate-900/90 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+            Standard Role Accounts (Password: Password123!)
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {testAccounts.map((acc) => (
+            <button
+              key={acc.email}
+              type="button"
+              onClick={() => handleSelectTestAccount(acc.email)}
+              className="p-2 rounded-xl border border-slate-700 hover:border-indigo-500/50 bg-slate-800/60 hover:bg-slate-800 text-left transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-200">{acc.name}</p>
+              </div>
+              <p className="text-[10px] text-slate-400">{acc.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {globalError && (
         <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
@@ -152,7 +118,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. resident@campus.edu"
+              placeholder="e.g. resident@campus.edu or aarav@cep.demo"
               className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-900 border ${errors.email ? 'border-rose-500' : 'border-slate-700'} text-slate-100 text-sm focus:outline-none focus:border-indigo-500`}
             />
           </div>
@@ -160,9 +126,8 @@ export default function Login({ onSwitchToRegister, onClose }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex justify-between">
-            <span>Password</span>
-            <button type="button" className="text-indigo-400 hover:text-indigo-300 lowercase normal-case">Forgot?</button>
+          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Password
           </label>
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
@@ -182,7 +147,7 @@ export default function Login({ onSwitchToRegister, onClose }) {
           disabled={isLoading}
           className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
         >
-          <span>{isLoading ? "Authenticating..." : "Sign In to Account"}</span>
+          <span>{isLoading ? "Authenticating..." : "Sign In"}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>

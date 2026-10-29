@@ -1,25 +1,75 @@
-import React, { useRef } from 'react';
-import { Camera, Image as ImageIcon, X, Sparkles, Check } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Camera, Image as ImageIcon, X, Sparkles, Check, Loader2 } from 'lucide-react';
 import { SAMPLE_COMPLAINT_IMAGES } from '../services/firebase';
 
 export default function ImagePicker({ selectedImage, onImageChange }) {
   const fileInputRef = useRef(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
+  // Compress image on client-side using HTML5 Canvas to 800px max dimension, quality 0.7 JPEG
+  // Results in ~30KB-40KB base64 data URL that stores in Cloud Firestore for 100% free with zero configuration
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        onImageChange(event.target.result);
+    if (!file) return;
+
+    setIsCompressing(true);
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Export compressed JPEG ~30KB-40KB
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          onImageChange(compressedDataUrl);
+        } catch (err) {
+          console.warn("Canvas compression fallback, using raw data URL:", err);
+          onImageChange(event.target.result);
+        } finally {
+          setIsCompressing(false);
+        }
       };
-      reader.readAsDataURL(file);
-    }
+
+      img.onerror = () => {
+        console.error("Failed to load image for compression");
+        setIsCompressing(false);
+      };
+
+      img.src = event.target.result;
+    };
+
+    reader.onerror = () => {
+      console.error("Failed to read image file");
+      setIsCompressing(false);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
     <div className="space-y-2.5">
       <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-        Attach Photo / Proof (Optional)
+        Attach Photo / Defect Proof (Optional)
       </label>
 
       {selectedImage ? (
@@ -32,7 +82,7 @@ export default function ImagePicker({ selectedImage, onImageChange }) {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end justify-between p-3">
             <span className="text-[11px] font-medium text-emerald-300 flex items-center gap-1 bg-slate-900/80 px-2 py-0.5 rounded-md border border-emerald-500/30">
               <Check className="w-3 h-3 text-emerald-400" />
-              Photo Attached
+              Photo Attached (Free Compressed Storage)
             </span>
             <button
               type="button"
@@ -48,7 +98,7 @@ export default function ImagePicker({ selectedImage, onImageChange }) {
         <div className="space-y-2">
           {/* Upload / Camera Trigger Box */}
           <div 
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => !isCompressing && fileInputRef.current?.click()}
             className="border-2 border-dashed border-slate-700/80 hover:border-indigo-500/60 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all bg-slate-900/40 hover:bg-slate-900/70 text-center group"
           >
             <input
@@ -60,17 +110,17 @@ export default function ImagePicker({ selectedImage, onImageChange }) {
               className="hidden"
             />
             <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:bg-slate-750 transition-colors mb-2">
-              <Camera className="w-5 h-5" />
+              {isCompressing ? <Loader2 className="w-5 h-5 animate-spin text-indigo-400" /> : <Camera className="w-5 h-5" />}
             </div>
             <p className="text-xs font-semibold text-slate-200">
-              Take photo or tap to browse
+              {isCompressing ? "Compressing photo for instant free storage..." : "Take photo or tap to browse"}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Supports Camera capture, JPG, PNG & WebP
+              Supports mobile camera, JPG, PNG & WebP (Auto-compressed)
             </p>
           </div>
 
-          {/* Quick Demo Photo Presets for seamless presentation */}
+          {/* Quick Defect Presets for rapid testing */}
           <div className="flex items-center gap-1.5 flex-wrap pt-1">
             <span className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-400" />
@@ -95,7 +145,7 @@ export default function ImagePicker({ selectedImage, onImageChange }) {
               onClick={() => onImageChange(SAMPLE_COMPLAINT_IMAGES.sanitation)}
               className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-800/80 border border-slate-700 text-emerald-300 hover:bg-slate-750 transition-colors"
             >
-              🗑️ Garbage Chute
+              🗑️ Waste Bin
             </button>
           </div>
         </div>

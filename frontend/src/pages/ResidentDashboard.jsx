@@ -12,20 +12,12 @@ import {
   Layers, 
   Clock, 
   CheckCircle2, 
-  AlertTriangle, 
-  Wrench, 
-  Send,
-  Zap,
-  Droplets,
-  Trash2,
-  HelpCircle,
-  FileText,
-  Camera
+  Send
 } from 'lucide-react';
 import { SAMPLE_COMPLAINT_IMAGES } from '../services/firebase';
 
 export default function ResidentDashboard() {
-  const { currentUser, isDemoMode, logout } = useAuth();
+  const { currentUser } = useAuth();
   const { tickets, submitTicket, upvoteTicket, activeCommunity, getNomenclature } = useCommunity();
   const nom = getNomenclature();
 
@@ -33,7 +25,7 @@ export default function ResidentDashboard() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [wing, setWing] = useState(currentUser?.wing || activeCommunity?.wings?.[0] || 'Wing A');
-  const [roomNumber, setRoomNumber] = useState(currentUser?.room_number || (isDemoMode ? 'A-304' : ''));
+  const [roomNumber, setRoomNumber] = useState(currentUser?.room_number || 'A-304');
   const [selectedImage, setSelectedImage] = useState(null);
   
   // AI Preview Modal State
@@ -43,13 +35,19 @@ export default function ResidentDashboard() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [duplicateInfo, setDuplicateInfo] = useState(null);
 
-  // Filter resident's own tickets
-  const myTickets = tickets.filter(t => t.resident_id === currentUser?.uid || t.resident_name === currentUser?.name);
+  // Filter resident's own tickets with robust UID and submittedBy matching
+  const myTickets = tickets.filter(t => 
+    t.resident_id === currentUser?.uid || 
+    t.submittedBy === currentUser?.uid || 
+    t.resident_name === currentUser?.name ||
+    (t.resident_name && currentUser?.name && t.resident_name.includes(currentUser.name.split(' ')[0]))
+  );
+  
   const activeCount = myTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Rejected').length;
   const resolvedCount = myTickets.filter(t => t.status === 'Resolved').length;
 
   // Preset Scenarios for 1-click testing
-  const demoScenarios = [
+  const sampleScenarios = [
     {
       title: "Ceiling fan making spark noise and regulator overheating",
       desc: "The regulator switch is hot to touch and sparks appear when turned on. Possible short circuit in the internal capacitor.",
@@ -114,12 +112,13 @@ export default function ResidentDashboard() {
   const handleConfirmSubmission = async () => {
     setIsSubmitting(true);
     try {
-      submitTicket({
+      await submitTicket({
         title,
         description,
         category: aiAnalysis?.category || "General",
         urgency: aiAnalysis?.urgency || "Low",
         resident_id: currentUser?.uid,
+        submittedBy: currentUser?.uid,
         resident_name: currentUser?.name || nom.reporter_label,
         community_id: activeCommunity?.community_id,
         wing,
@@ -148,33 +147,19 @@ export default function ResidentDashboard() {
             <Sparkles className="w-3 h-3 text-indigo-400" />
             {nom.reporter_label} Portal • {activeCommunity?.name}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight flex items-center flex-wrap gap-2">
-            Hi, {currentUser?.name || "Resident"} 👋
-            {currentUser?.email?.endsWith('@cep.demo') && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Evaluation Demo Account
-              </span>
-            )}
-          </h2>
-          {currentUser?.email?.endsWith('@cep.demo') && !isDemoMode && (
-            <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs flex items-center justify-between flex-wrap gap-2">
-              <span>You are signed in with an evaluation account ({currentUser.email}).</span>
-              <button
-                onClick={logout}
-                className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-sm transition-colors"
-              >
-                Sign Out to Use Real Account
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2.5 pt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight">
+              Hi, {currentUser?.name || "Resident"} 👋
+            </h2>
+          </div>
           <p className="text-xs text-slate-300/90 leading-relaxed">
             Report maintenance issues with natural language & photo attachments. Our Gemini AI automatically assesses urgency, checks for duplicates, and alerts your <strong>{nom.verifier_label}</strong>.
           </p>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <StatsCard
           title="Active Issues"
           value={activeCount}
@@ -191,133 +176,119 @@ export default function ResidentDashboard() {
         />
         <StatsCard
           title={nom.division_label}
-          value={currentUser?.wing || activeCommunity?.wings?.[0] || "Wing A"}
-          subtitle={`Room ${currentUser?.room_number || 'A-304'}`}
+          value={currentUser?.wing || wing}
+          subtitle={`Room ${currentUser?.room_number || roomNumber}`}
           icon={Layers}
           color="purple"
         />
       </div>
 
-      {/* New Complaint Form */}
-      <div id="new-complaint-section" className="glass-panel rounded-2xl border border-slate-800/80 p-5 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
-              <PlusCircle className="w-4 h-4 text-indigo-400" />
+      {/* Submit Complaint Card */}
+      <div id="new-complaint-section" className="glass-panel p-4 sm:p-6 rounded-2xl border border-slate-800/90 space-y-5 bg-slate-900/70">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-indigo-400" />
+            <h3 className="text-base font-bold text-slate-100">
               Log a Problem or Defect
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Describe in plain words and attach a photo proof
-            </p>
           </div>
-
-          {/* Preset Buttons for Frictionless Demo (Rendered ONLY in Demo Mode) */}
-          {isDemoMode && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-semibold text-amber-400">Demo Quick Fill:</span>
-              {demoScenarios.map((sc, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handlePreFill(sc)}
-                  className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-slate-900 border border-slate-700 text-amber-300 hover:border-amber-500 hover:bg-slate-800 touch-press transition-colors"
-                >
-                  Sample {i + 1}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Quick Pre-fill scenarios */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] uppercase font-semibold text-slate-400">Quick Test:</span>
+            {sampleScenarios.map((sc, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handlePreFill(sc)}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 transition-colors"
+              >
+                Sample {idx + 1}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="mt-5 space-y-4">
-          {/* Location details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 {nom.division_label} / Section
               </label>
               <select
                 value={wing}
                 onChange={(e) => setWing(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
               >
-                {(activeCommunity?.wings || ["Section 1", "Section 2", "Section 3"]).map(w => (
+                {(activeCommunity?.wings || ["Wing A", "Wing B", "Wing C"]).map(w => (
                   <option key={w} value={w}>{w}</option>
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 Specific Location / Room Number
               </label>
               <input
                 type="text"
-                required
                 value={roomNumber}
                 onChange={(e) => setRoomNumber(e.target.value)}
-                placeholder="e.g. Flat 402, 2nd Floor Corridor, Lobby"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. A-304, 2nd Floor Corridor"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+                required
               />
             </div>
           </div>
 
-          {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
               Short Title
             </label>
             <input
               type="text"
-              required
               value={title}
+              maxLength={120}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Main corridor tube light flickering violently and buzzing"
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
+              required
             />
           </div>
 
-          {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
               Detailed Description & Symptoms
             </label>
             <textarea
               rows={3}
-              required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Explain the problem, duration, or any safety concerns..."
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 resize-none"
+              required
             />
           </div>
 
-          {/* Image & Camera Picker */}
-          <ImagePicker 
-            selectedImage={selectedImage} 
-            onImageChange={setSelectedImage} 
+          {/* Photo Uploader with Auto Client-Side WebP Compression */}
+          <ImagePicker
+            selectedImage={selectedImage}
+            onImageChange={setSelectedImage}
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <span className="text-[11px] text-slate-400 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Auto-categorizes & checks duplicates on submit
-            </span>
-
+          <div className="pt-2">
             <button
               type="submit"
-              disabled={isAnalyzing || !title.trim()}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 touch-press transition-all disabled:opacity-50"
+              disabled={isAnalyzing || !title.trim() || !description.trim()}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 touch-press"
             >
               {isAnalyzing ? (
                 <>
-                  <Clock className="w-3.5 h-3.5 animate-spin" />
-                  <span>AI Analyzing & Deduplicating...</span>
+                  <Sparkles className="w-4 h-4 animate-spin text-indigo-300" />
+                  <span>Gemini AI Analyzing Urgency...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Analyze & Submit Complaint</span>
+                  <Send className="w-4 h-4" />
+                  <span>Analyze with Gemini & Submit</span>
                 </>
               )}
             </button>
@@ -325,46 +296,50 @@ export default function ResidentDashboard() {
         </form>
       </div>
 
-      {/* List of Resident's Complaints */}
+      {/* Resident's Active Ticket Feed */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
-            My Submitted Complaints ({myTickets.length})
+          <h3 className="text-base font-bold text-slate-100 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-indigo-400" />
+            My Reported Issues ({myTickets.length})
           </h3>
+          <span className="text-[11px] text-slate-400">
+            Real-Time Sync Active
+          </span>
         </div>
 
-        {myTickets.length === 0 ? (
-          <div className="glass-panel p-6 rounded-2xl text-center text-slate-400 space-y-1.5">
-            <CheckCircle2 className="w-6 h-6 text-indigo-400/60 mx-auto" />
-            <p className="text-xs font-semibold text-slate-300">No active complaints logged by you</p>
-            <p className="text-[11px]">Use the form above to log any issues in your {nom.division_label}.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {myTickets.map(ticket => (
-              <TicketCard
-                key={ticket.ticket_id}
-                ticket={ticket}
-                currentRole="resident"
-                currentUserId={currentUser?.uid}
-                onUpvote={(id) => upvoteTicket(id)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {myTickets.map(ticket => (
+            <TicketCard
+              key={ticket.ticket_id || ticket.id}
+              ticket={ticket}
+              currentRole="resident"
+              currentUserId={currentUser?.uid}
+              onUpvote={() => upvoteTicket(ticket.ticket_id || ticket.id)}
+            />
+          ))}
+
+          {myTickets.length === 0 && (
+            <div className="col-span-full glass-panel p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-800">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400/80 mx-auto" />
+              <p className="text-sm font-semibold text-slate-200">No open complaints from your unit</p>
+              <p className="text-xs">If you notice any maintenance defect, log it above for instant escalation.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* AI Analysis Confirmation Modal */}
-      <AIAnalysisModal
-        isOpen={showAIModal}
-        onClose={() => setShowAIModal(false)}
-        onConfirm={handleConfirmSubmission}
-        aiAnalysis={aiAnalysis}
-        duplicateInfo={duplicateInfo}
-        ticketData={{ title, description, wing, roomNumber, imageUrl: selectedImage, community_id: activeCommunity?.community_id }}
-        isSubmitting={isSubmitting}
-      />
+      {/* AI Analysis Modal Confirmation */}
+      {showAIModal && (
+        <AIAnalysisModal
+          isOpen={showAIModal}
+          onClose={() => setShowAIModal(false)}
+          onConfirm={handleConfirmSubmission}
+          analysis={aiAnalysis}
+          duplicateInfo={duplicateInfo}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </div>
   );
 }

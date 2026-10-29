@@ -83,8 +83,8 @@ npm install
 npm run dev
 ```
 Open your browser at `http://localhost:5173`.
-- Visit `http://localhost:5173/` for the **Production App**.
-- Visit `http://localhost:5173/demo` for the **Isolated Presentation Demo Mode**.
+- Directly sign in with any of the 4 standard accounts (`aarav@cep.demo`, `vikram@cep.demo`, `rajesh@cep.demo`, `anita@cep.demo` / `Password123!`).
+- Or click "Create Account" to register a new user.
 
 ---
 

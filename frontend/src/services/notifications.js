@@ -1,12 +1,19 @@
-// Notification Dispatch Client for SMS (Twilio) and Email (Resend)
+// Notification Dispatch Client for SMS (Twilio), WhatsApp, and Email (Resend)
+import { getBackendUrl } from './firebase';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const getBaseUrl = () => {
+  return getBackendUrl();
+};
 
 /**
  * Dispatch an SMS alert to authorities within 30s of Wing Rep verification
  */
 export async function dispatchVerificationSMS({ toPhone, ticketId, title, wing, verifierName, urgency = "High" }) {
+  const BACKEND_URL = getBaseUrl();
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
     const response = await fetch(`${BACKEND_URL}/api/notifications/sms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -15,8 +22,10 @@ export async function dispatchVerificationSMS({ toPhone, ticketId, title, wing, 
         message: `🚨 [CEP Observatory] URGENT ${urgency.toUpperCase()} Issue in ${wing}: "${title}" has been VERIFIED by ${verifierName} and escalated to Estate Admin for maintenance dispatch.`,
         ticket_id: ticketId,
         urgency: urgency
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       console.warn("SMS notification endpoint responded with status:", response.status);
@@ -25,7 +34,7 @@ export async function dispatchVerificationSMS({ toPhone, ticketId, title, wing, 
     
     return await response.json();
   } catch (error) {
-    console.warn("SMS dispatch fallback (backend offline or simulated):", error.message);
+    console.warn("SMS dispatch notice (backend offline or simulated):", error?.message);
     return { status: "simulated", simulated: true };
   }
 }
@@ -34,7 +43,11 @@ export async function dispatchVerificationSMS({ toPhone, ticketId, title, wing, 
  * Dispatch an Email alert for ticket status updates (In Progress, Resolved, etc.)
  */
 export async function dispatchStatusEmail({ toEmail, ticketId, title, status, assignedWorker, notes }) {
+  const BACKEND_URL = getBaseUrl();
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
     const response = await fetch(`${BACKEND_URL}/api/notifications/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -50,8 +63,10 @@ export async function dispatchStatusEmail({ toEmail, ticketId, title, status, as
           notes: notes || 'Updated by Estate Admin',
           timestamp: new Date().toISOString()
         }
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return { status: "simulated", simulated: true };
@@ -59,8 +74,7 @@ export async function dispatchStatusEmail({ toEmail, ticketId, title, status, as
 
     return await response.json();
   } catch (error) {
-    console.warn("Email dispatch fallback (backend offline or simulated):", error.message);
+    console.warn("Email dispatch notice (backend offline or simulated):", error?.message);
     return { status: "simulated", simulated: true };
   }
 }
-

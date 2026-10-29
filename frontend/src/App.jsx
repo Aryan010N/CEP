@@ -44,6 +44,7 @@ const PATH_TO_TAB = {
   '/estate-admin': 'admin_dashboard',
   '/analytics': 'admin_analytics',
   '/feed': 'community_feed',
+  '/board': 'community_feed',
   '/challenges': 'ngo_marketplace',
   '/marketplace': 'ngo_marketplace',
   '/scoreboard': 'scoreboard',
@@ -81,6 +82,14 @@ function AppContent() {
   const [feedWingFilter, setFeedWingFilter] = useState('All');
   const [feedSearch, setFeedSearch] = useState('');
 
+  const navigateTo = (path, tabId = null) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+    if (tabId) {
+      setCurrentTab(tabId);
+    }
+  };
+
   // Bidirectional routing sync on mount & popstate
   useEffect(() => {
     const handlePopState = () => {
@@ -100,6 +109,17 @@ function AppContent() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // When user is authenticated, redirect away from /login or /signup directly to their role dashboard
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      if (isLoginRoute || isRegisterRoute || currentPath === '/') {
+        const targetTab = DEFAULT_TAB[role] || 'resident_dashboard';
+        const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+        navigateTo(targetPath, targetTab);
+      }
+    }
+  }, [isAuthenticated, role, isLoginRoute, isRegisterRoute, currentPath, isLoading]);
 
   // Handle role change — reset to default tab for that role
   useEffect(() => {
@@ -127,21 +147,12 @@ function AppContent() {
         return;
       }
       
-      // If already authenticated, attempt to join community
       setTimeout(() => {
         joinCommunity(communityId);
         window.history.replaceState({}, '', window.location.pathname);
       }, 500);
     }
   }, [isAuthenticated, isLoading]);
-
-  const navigateTo = (path, tabId = null) => {
-    window.history.pushState({}, '', path);
-    setCurrentPath(path);
-    if (tabId) {
-      setCurrentTab(tabId);
-    }
-  };
 
   // Tab guard — enforce allowed tabs and update URL
   const handleSetCurrentTab = (tabId) => {
@@ -165,7 +176,7 @@ function AppContent() {
         t.title.toLowerCase().includes(q) ||
         t.description.toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q) ||
-        t.room_number.toLowerCase().includes(q)
+        (t.room_number && t.room_number.toLowerCase().includes(q))
       );
     }
     return true;
@@ -192,7 +203,7 @@ function AppContent() {
             <Shield className="w-6 h-6 text-indigo-400" />
           </div>
         </div>
-        <p className="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase">Initializing Secure Context...</p>
+        <p className="text-sm font-bold text-slate-400 animate-pulse tracking-widest uppercase">Connecting to Observatory...</p>
       </div>
     );
   }
@@ -215,78 +226,48 @@ function AppContent() {
         {/* Dynamic Center Main Area */}
         <main className="flex-1 min-w-0">
           {/* Explicit Standalone /login Route */}
-          {isLoginRoute && (
-            !isAuthenticated ? (
-              <div className="py-8 max-w-lg mx-auto">
-                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
-                  <Login onSwitchToRegister={() => navigateTo('/signup')} />
-                </div>
+          {isLoginRoute && !isAuthenticated && (
+            <div className="py-8 max-w-lg mx-auto">
+              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
+                <Login
+                  onSwitchToRegister={() => navigateTo('/signup')}
+                  onSuccess={(user) => {
+                    const targetTab = DEFAULT_TAB[user.role] || 'resident_dashboard';
+                    const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+                    navigateTo(targetPath, targetTab);
+                  }}
+                />
               </div>
-            ) : (
-              <div className="glass-panel p-8 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-4 my-12">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-bold text-white">Already Signed In</h2>
-                <p className="text-xs text-slate-300">
-                  You are authenticated as <strong>{currentUser?.name}</strong> ({currentUser?.email}) with role <span className="capitalize text-indigo-300">{role}</span>.
-                </p>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    onClick={() => handleSetCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard')}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
-                  >
-                    Go to My Dashboard
-                  </button>
-                  <button
-                    onClick={logout}
-                    className="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-xs"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )
+            </div>
           )}
 
           {/* Explicit Standalone /signup Route */}
-          {isRegisterRoute && (
-            !isAuthenticated ? (
-              <div className="py-8 max-w-xl mx-auto">
-                <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
-                  <Register onSwitchToLogin={() => navigateTo('/login')} />
-                </div>
+          {isRegisterRoute && !isAuthenticated && (
+            <div className="py-8 max-w-xl mx-auto">
+              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl bg-slate-900/90">
+                <Register
+                  onSwitchToLogin={() => navigateTo('/login')}
+                  onClose={() => {
+                    const targetTab = DEFAULT_TAB[role] || 'resident_dashboard';
+                    const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+                    navigateTo(targetPath, targetTab);
+                  }}
+                />
               </div>
-            ) : (
-              <div className="glass-panel p-8 rounded-3xl border border-slate-800 text-center max-w-md mx-auto space-y-4 my-12">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <h2 className="text-xl font-bold text-white">Already Signed In</h2>
-                <p className="text-xs text-slate-300">
-                  You are authenticated as <strong>{currentUser?.name}</strong>.
-                </p>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    onClick={() => handleSetCurrentTab(DEFAULT_TAB[role] || 'resident_dashboard')}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
-                  >
-                    Go to My Dashboard
-                  </button>
-                  <button
-                    onClick={logout}
-                    className="px-4 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 font-bold text-xs"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )
+            </div>
           )}
 
           {/* Unauthenticated Home Landing */}
           {!isAuthenticated && !isLoginRoute && !isRegisterRoute && (
-            <LandingPage initialMode={authMode} onSwitchMode={(mode) => navigateTo(mode === 'register' ? '/signup' : '/login')} />
+            <LandingPage
+              initialMode={authMode}
+              onSwitchMode={(mode) => navigateTo(mode === 'register' ? '/signup' : '/login')}
+              onAuthSuccess={(user) => {
+                const targetTab = DEFAULT_TAB[user.role] || 'resident_dashboard';
+                const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+                navigateTo(targetPath, targetTab);
+              }}
+            />
           )}
 
           {/* Authenticated Application Portals */}
@@ -363,7 +344,7 @@ function AppContent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {feedTickets.map(ticket => (
                       <TicketCard
-                        key={ticket.ticket_id}
+                        key={ticket.ticket_id || ticket.id}
                         ticket={ticket}
                         currentRole={role}
                         currentUserId={currentUser?.uid}
@@ -406,7 +387,7 @@ function AppContent() {
         />
       )}
 
-      {/* Auth Modal (Fallback for quick popups) */}
+      {/* Auth Modal */}
       <Modal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -417,11 +398,22 @@ function AppContent() {
           <Login
             onSwitchToRegister={() => setAuthMode('register')}
             onClose={() => setShowAuthModal(false)}
+            onSuccess={(user) => {
+              setShowAuthModal(false);
+              const targetTab = DEFAULT_TAB[user.role] || 'resident_dashboard';
+              const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+              navigateTo(targetPath, targetTab);
+            }}
           />
         ) : (
           <Register
             onSwitchToLogin={() => setAuthMode('login')}
-            onClose={() => setShowAuthModal(false)}
+            onClose={() => {
+              setShowAuthModal(false);
+              const targetTab = DEFAULT_TAB[role] || 'resident_dashboard';
+              const targetPath = TAB_TO_PATH[targetTab] || '/dashboard';
+              navigateTo(targetPath, targetTab);
+            }}
           />
         )}
       </Modal>

@@ -1,12 +1,19 @@
 // API Service connecting to FastAPI AI Backend
+import { getBackendUrl } from './firebase';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:8000';
+const getBaseUrl = () => {
+  return getBackendUrl();
+};
 
 /**
  * Call Gemini AI Backend to analyze ticket title and description
  */
 export async function analyzeTicketAI({ title, description, community_id, wing }) {
+  const API_BASE_URL = getBaseUrl();
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch(`${API_BASE_URL}/api/tickets/analyze`, {
       method: 'POST',
       headers: {
@@ -18,7 +25,9 @@ export async function analyzeTicketAI({ title, description, community_id, wing }
         community_id: community_id || 'comm_emerald_1',
         wing: wing || 'Wing A'
       }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`AI API error: ${response.statusText}`);
@@ -26,8 +35,7 @@ export async function analyzeTicketAI({ title, description, community_id, wing }
 
     return await response.json();
   } catch (err) {
-    console.warn("Backend API unavailable or erroring, utilizing intelligent client-side fallback:", err);
-    // Intelligent local fallback if python server isn't running
+    console.warn("Backend API unavailable or timed out, utilizing intelligent client-side fallback:", err?.message);
     const content = `${title} ${description}`.toLowerCase();
     let category = "General";
     if (/wire|light|spark|switch|fan|electricity|socket|power|fuse|bulb|ac/i.test(content)) {
@@ -59,7 +67,11 @@ export async function analyzeTicketAI({ title, description, community_id, wing }
  * Check if the new complaint matches any existing open tickets in the community
  */
 export async function checkDuplicateComplaintAI(newComplaint, existingComplaints) {
+  const API_BASE_URL = getBaseUrl();
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
     const response = await fetch(`${API_BASE_URL}/api/tickets/deduplicate`, {
       method: 'POST',
       headers: {
@@ -72,7 +84,9 @@ export async function checkDuplicateComplaintAI(newComplaint, existingComplaints
           text: `${t.title}. ${t.description}`
         }))
       }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Deduplication API error: ${response.statusText}`);
@@ -80,8 +94,7 @@ export async function checkDuplicateComplaintAI(newComplaint, existingComplaints
 
     return await response.json();
   } catch (err) {
-    console.warn("Backend API unavailable, using client-side fallback deduplication:", err);
-    // Simple client fallback
+    console.warn("Backend API unavailable, using client-side fallback deduplication:", err?.message);
     const newWords = newComplaint.toLowerCase().split(/\W+/).filter(w => w.length > 3);
     for (const ticket of existingComplaints) {
       const ticketText = `${ticket.title} ${ticket.description}`.toLowerCase();
@@ -99,54 +112,64 @@ export async function checkDuplicateComplaintAI(newComplaint, existingComplaints
         };
       }
     }
+
     return {
       is_duplicate: false,
-      matched_ticket_id: null,
-      confidence: 0.0,
-      reasoning: "No duplicate complaints detected among active tickets."
+      confidence: 0.1,
+      reasoning: "No semantically matching open issue found in community active queue."
     };
   }
 }
 
 /**
- * Request AI executive summary for Admin Dashboard
+ * Request Gemini AI to synthesize an executive summary and action items for Estate Admin
  */
 export async function generateAdminReportAI(communityName, tickets) {
+  const API_BASE_URL = getBaseUrl();
   try {
-    const response = await fetch(`${API_BASE_URL}/api/reports/generate`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(`${API_BASE_URL}/api/tickets/admin-report`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         community_name: communityName,
-        tickets: tickets
+        tickets: tickets.map(t => ({
+          id: t.ticket_id || t.id,
+          title: t.title,
+          category: t.category,
+          urgency: t.urgency,
+          status: t.status,
+          wing: t.wing
+        }))
       }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`Report API error: ${response.statusText}`);
+      throw new Error(`AI API error: ${response.statusText}`);
     }
 
     return await response.json();
   } catch (err) {
-    console.warn("Report backend API fallback:", err);
-    const critical = tickets.filter(t => t.urgency === 'High').length;
+    console.warn("Admin report AI offline or timed out, synthesizing client fallback:", err?.message);
+    const highUrgency = tickets.filter(t => t.urgency === 'High' && t.status !== 'Resolved');
+    const verified = tickets.filter(t => t.status === 'Verified_By_Rep');
+    const inProgress = tickets.filter(t => t.status === 'In_Progress' || t.status === 'Assigned');
+    const resolved = tickets.filter(t => t.status === 'Resolved');
+
     return {
-      executive_summary: `AI Observatory briefing for ${communityName}: Tracking ${tickets.length} total tickets with ${critical} critical high-urgency items currently active.`,
-      total_tickets: tickets.length,
-      critical_issues_count: critical,
-      top_categories: [
-        { category: "Electrical", count: tickets.filter(t => t.category === "Electrical").length },
-        { category: "Plumbing", count: tickets.filter(t => t.category === "Plumbing").length },
-        { category: "Sanitation", count: tickets.filter(t => t.category === "Sanitation").length },
-        { category: "General", count: tickets.filter(t => t.category === "General").length }
-      ],
+      executive_summary: `${communityName} has ${tickets.length} total logged complaints, with ${verified.length} verified by representatives awaiting technician assignment and ${highUrgency.length} high-urgency items flagged.`,
       action_items: [
-        "Escalate pending high-urgency tickets to emergency technician crew.",
-        "Ensure Wing Representatives verify all unreviewed submissions within 2 hours.",
-        "Promote NGO challenges on social impact boards."
-      ]
+        highUrgency.length > 0 ? `Immediate safety inspection required for ${highUrgency.length} high-priority issues.` : "No urgent safety hazards currently logged.",
+        `Dispatch assigned vendors to clear ${verified.length} verified queue items.`,
+        `${resolved.length} issues successfully resolved and closed.`
+      ],
+      hazard_alerts: highUrgency.map(h => `Hazard in ${h.wing}: ${h.title}`)
     };
   }
 }

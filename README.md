@@ -1,18 +1,33 @@
 # AI Community Digital Problem Observatory 🛡️
 > **Community Engagement Project (CEP) Platform**  
-> Centralized, intelligent civic problem reporting, automated Gemini AI categorization & deduplication, multi-community hierarchy customization, 30s authority SMS alerts, photo evidence attachments, and NGO challenge marketplace with CEP credit gamification.
+> Centralized, intelligent civic problem reporting with Google Gemini AI categorization & deduplication, dynamic community nomenclature hierarchy, instant authority alerts, free compressed photo evidence storage, and an NGO challenge marketplace with CEP academic credit gamification.
 
 [![Live Production](https://img.shields.io/badge/Production%20App-https%3A%2F%2Fcep--seven.vercel.app%2F-indigo?style=for-the-badge&logo=vercel)](https://cep-seven.vercel.app/)
-[![Live Demo Environment](https://img.shields.io/badge/Isolated%20Demo-https%3A%2F%2Fcep--seven.vercel.app%2Fdemo-amber?style=for-the-badge&logo=google-chrome)](https://cep-seven.vercel.app/demo)
-[![Firebase Console](https://img.shields.io/badge/Firebase%20Console-cep--ai-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/u/0/project/cep-ai/overview)
+[![Backend API](https://img.shields.io/badge/Backend%20API-Render%20Live-teal?style=for-the-badge&logo=fastapi)](https://cep-wacs.onrender.com)
+[![Firebase Project](https://img.shields.io/badge/Firebase-cep--ai-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/u/0/project/cep-ai/overview)
 
 ---
 
 ## 🌟 Overview
 
-The **AI Community Digital Problem Observatory** replaces chaotic WhatsApp groups, lost verbal complaints, and paper registers in hostels, residential housing societies, and university campuses with an intelligent, transparent, and accountable pipeline.
+The **AI Community Digital Problem Observatory** replaces chaotic WhatsApp messages, lost phone complaints, and paper registers with an intelligent, 3-tier escalation pipeline. 
 
-It bridges residents, wing representatives, estate administrators, and local NGOs into a structured problem-to-resolution lifecycle powered by **Google Gemini AI** and **Firebase Cloud Firestore**.
+It directly connects Residents, Wing Representatives, Estate Administrators, and NGO Partners into a transparent, real-time civic problem-resolution workflow powered by **Google Gemini AI** and **Cloud Firestore**.
+
+---
+
+## 🔑 Standard Pre-Seeded Accounts (Direct Login)
+
+Use these credentials to log in and inspect the dedicated dashboards for each role:
+
+| Persona / Role | Email Address | Password | Landing Route | Key Capabilities |
+|---|---|---|---|---|
+| **Resident / Student** | `aarav@cep.demo` | `Password123!` | `/dashboard` | Log complaints, attach photo evidence, upvote issues, claim NGO challenges |
+| **Wing Representative** | `vikram@cep.demo` | `Password123!` | `/rep` | Inspect wing complaints, filter spam, verify & escalate with SMS trigger |
+| **Estate Admin** | `rajesh@cep.demo` | `Password123!` | `/admin` | Review verified backlog, assign maintenance crews, update status, AI brief |
+| **NGO Partner** | `anita@cep.demo` | `Password123!` | `/challenges` | Publish community challenges, award CEP academic credits & certificates |
+
+*(New accounts can also be created anytime using the `/signup` form with live Zod email/phone validation and QR code onboarding).*
 
 ---
 
@@ -25,163 +40,138 @@ sequenceDiagram
     participant AI as Gemini AI Engine
     actor WingRep as 2. Wing Representative
     actor Admin as 3. Estate Admin
-    participant Notif as SMS & Email Gateway
+    participant Notif as Notification Gateway (SMS/WA/Email)
     actor NGO as 4. NGO Partner
 
-    Resident->>AI: Submits Complaint (Text, Location, Photo)
-    AI-->>Resident: Auto-Categorizes (Electrical/Plumbing/Sanitation/General) & Deduplicates
-    Resident->>WingRep: Ticket Routed to Wing Rep Queue
-    WingRep->>WingRep: Sanity Check (Filters spam / duplicates)
-    WingRep->>Admin: Verifies & Escalates Ticket
-    WingRep->>Notif: Triggers Automated SMS Alert to Estate Admin (<30s)
-    Admin->>Admin: Dispatches Maintenance Workforce & Sets "In Progress"
-    Admin->>Notif: Status Update Email Sent to Resident
-    Admin->>Resident: Resolves Ticket (+20 CEP Credits Awarded)
-    NGO->>Resident: Posts Community Challenge on Marketplace
-    Resident->>NGO: Claims Challenge & Submits Solution (+300 CEP Credits)
-```
-
-### The 4 Standardized System Personas:
-1. **Resident / Student (Indigo Identity):**
-   - Submit natural language complaints with photo evidence and location.
-   - Real-time Gemini AI preview (Category: Electrical, Plumbing, Sanitation, General; Urgency: Low, Medium, High).
-   - Automated semantic deduplication gate preventing duplicate submissions.
-   - Upvote active community complaints to boost maintenance priority.
-   - Claim NGO challenges to earn academic CEP credits.
-2. **Wing Representative (Emerald Identity):**
-   - Filtered strictly to their assigned division/wing (e.g., Wing A).
-   - Local sanity check: "Verify & Escalate" or "Flag as Spam / Reject".
-   - Automated 30s SMS alert dispatched to Estate Admin upon verification.
-   - Dynamic honor badges ("Wing Leader", "Master Verifier").
-3. **Estate Admin (Purple Identity):**
-   *(Standardized across code, UI, and documentation; formerly referred to as Chief Warden in hostel settings)*
-   - Aggregated cross-wing verified ticket register.
-   - Maintenance workforce dispatch (assign technician crews, track progress).
-   - Gemini AI executive management briefing summarizing community health and action items.
-4. **NGO Partner (Teal Identity):**
-   - Marketplace for publishing operational challenges (IoT monitoring, waste audits, rural education).
-   - Review and accept student project submissions for social impact certification and CEP credits.
-
----
-
-## 🔒 Demo vs. Production Separation Architecture
-
-To guarantee absolute data integrity, the **Production Application** and the **Demonstration Environment** operate on distinct routes with strictly isolated datastores:
-
-| Parameter | Production Application (`/` or `/app`) | Demo Environment (`/demo`) |
-|---|---|---|
-| **Route Endpoint** | `https://cep-seven.vercel.app/` (or `/login`, `/register`) | `https://cep-seven.vercel.app/demo` |
-| **Data Isolation** | Real Cloud Firestore collections: `tickets`, `communities`, `users`, `challenges` | Isolated collections: `demo_tickets`, `demo_communities`, `demo_challenges`, `demo_users` |
-| **Authentication** | Real Firebase Auth accounts with embedded Sign In / Create Account gateway | Seeded 1-Click Evaluation Personas + Demo Accounts |
-| **Intake Form State** | Real user inputs (clean empty fields, no mock presets) | 1-Click "Demo Quick Fill (Sample 1, 2, 3)" presets |
-| **Write Protection** | Firestore Security Rules strictly block demo writes from modifying real data | Isolated to `demo_*` collections; zero production pollution |
-| **Persona Switcher** | Hidden (real user profiles only; prominent direct Sign Out) | Visible top evaluation toolbar (`1. Resident`, `2. Wing Rep`, `3. Estate Admin`, `4. NGO`) |
-
----
-
-## 📊 Cloud Firestore Schema Reference
-
-### 1. `users/{uid}`
-```typescript
-interface UserDocument {
-  email: string;              // "aarav@campus.edu"
-  displayName: string;        // "Aarav Sharma"
-  role: "resident" | "wing_rep" | "admin" | "ngo";
-  communityId: string;       // "comm_emerald_1"
-  community_id: string;      // Normalized legacy alias
-  wing: string;              // "Wing A"
-  room_number: string;       // "A-304"
-  phone: string;             // "+91 98765 43210"
-  cepCredits: number;        // Gamification points balance (e.g. 450)
-  createdAt: string;         // ISO-8601 timestamp
-}
-```
-
-### 2. `tickets/{ticketId}`
-```typescript
-interface TicketDocument {
-  ticket_id: string;         // "TICK-8021"
-  title: string;             // "Main corridor ceiling fan sparking"
-  description: string;       // Detailed problem statement
-  category: "Electrical" | "Plumbing" | "Sanitation" | "General";
-  urgency: "Low" | "Medium" | "High";
-  status: "Submitted" | "Verified_By_Rep" | "Assigned" | "In_Progress" | "Resolved" | "Rejected";
-  resident_id: string;       // Submitter UID
-  resident_name: string;     // Submitter display name
-  community_id: string;      // "comm_emerald_1"
-  wing: string;              // "Wing A"
-  room_number: string;       // "A-304"
-  image_url: string | null;  // Photo evidence URL or data preset
-  upvotes: number;           // Community urgency validation counter
-  upvoted_by: string[];      // Array of resident UIDs who validated the issue
-  verified_by: string | null;// "Vikram Malhotra (Wing Rep)"
-  assigned_worker: string | null; // e.g., "Apex Electricals"
-  ai_summary: string;        // Objective 1-2 sentence AI defect summary
-  suggested_action: string;  // Concrete recommendation from Gemini AI
-  server_created_at: Timestamp;
-  server_updated_at: Timestamp;
-}
-```
-
-### 3. `communities/{communityId}`
-```typescript
-interface CommunityDocument {
-  community_id: string;      // "comm_emerald_1"
-  name: string;              // "Emerald Heights Campus Hostel"
-  type: "hostel" | "housing_society" | "rwa_colony" | "ngo_hub" | "custom";
-  city: string;              // "Bengaluru"
-  wings: string[];           // ["Wing A", "Wing B", "Wing C", "Wing D"]
-  admin_uid: string;         // UID of the Estate Admin
-  nomenclature: {
-    reporter_label: string;  // "Resident / Student"
-    verifier_label: string;  // "Wing Representative"
-    authority_label: string; // "Estate Admin"
-    division_label: string;  // "Wing"
-  };
-  members: Array<{ uid: string; name: string; role: string }>;
-  created_at: string;
-}
-```
-
-### 4. `challenges/{challengeId}`
-```typescript
-interface ChallengeDocument {
-  challenge_id: string;      // "NGO-CH-101"
-  ngo_name: string;          // "CleanCity & EcoGreen NGO"
-  title: string;             // "AI Image Model for Waste Auditing"
-  description: string;       // Operational bottleneck description
-  skills_required: string[]; // ["React", "Python", "Computer Vision"]
-  status: "Open" | "Claimed" | "In_Review" | "Closed";
-  claimed_by_user_id: string | null;
-  claimed_by_user_name: string | null;
-  contact_email: string;     // NGO contact bridge
-  reward: string;            // "Certificate + 300 CEP Credits"
-  created_at: string;
-}
+    Resident->>AI: Submits complaint (Text, Room, Free Compressed Photo)
+    AI-->>Resident: Auto-Categorizes (Electrical/Plumbing/Sanitation) & Urgency Check
+    Resident->>WingRep: Ticket routed to Wing Representative queue
+    WingRep->>WingRep: On-site verification (checks attached photo proof)
+    WingRep->>Admin: Verifies & escalates ticket
+    WingRep->>Notif: Dispatches automated SMS/WhatsApp alert to Admin (<30s)
+    Admin->>Admin: Dispatches maintenance crew & sets "In Progress"
+    Admin->>Notif: Status update email sent to Resident
+    Admin->>Resident: Resolves & closes ticket (+20 CEP Credits awarded)
+    NGO->>Resident: Posts social impact challenge on NGO Problem Hub
+    Resident->>NGO: Claims challenge & delivers solution (+300 CEP Credits)
 ```
 
 ---
 
-## 🎯 Pitch Deck Feature Implementation Audit
+## 🏢 Dynamic Multi-Community Nomenclature
 
-| Pitch Deck Feature | Status | Implementation Details |
-|---|---|---|
-| **AI Classification** | **Implemented** | Gemini 3.8 Flash via FastAPI `POST /api/tickets/analyze` with intelligent regex fallback. |
-| **Urgency Scoring** | **Implemented** | Tri-level priority (`Low`, `Medium`, `High`) derived from incident severity cues. |
-| **Semantic Deduplication** | **Implemented** | Gemini semantic embedding similarity via `POST /api/tickets/deduplicate`. Verified blocking gate before Firestore write. |
-| **SMS Alerts (<30s)** | **Implemented** | Twilio integration (`/api/notifications/sms`) with guaranteed sub-30s simulated dispatch logging for authority alerts on Wing Rep verification. |
-| **Email Verification & Alerts** | **Implemented** | Resend email dispatch (`/api/notifications/email`) on status progression (`In_Progress`, `Resolved`). |
-| **NGO Challenge Marketplace** | **Implemented** | Dedicated board for posting, filtering, claiming, and tracking social impact problems. |
-| **QR-Code Onboarding** | **Implemented** | Dynamic printable QR codes for community joining (`/?action=join&community=...`) and location-specific complaint spots. |
-| **Gamification & Scoreboard** | **Implemented** | Honor Roll leaderboard tracking CEP credits, student contributions, and wing resolution velocity. |
-| **Community Upvotes** | **Implemented** | Community validation button on `TicketCard.jsx` with persistent Firestore counters. |
-| **Wing Rep Badges** | **Implemented** | Dynamic honor badges ("Wing Leader", "Master Verifier") awarded on verification milestones. |
+All role titles, organizational tiers, and division labels are **100% dynamic** across the application. When switching or creating a community, all headers, cards, and buttons instantly adapt:
+
+| Community Type | Reporter Label (`reporter_label`) | Verifier Label (`verifier_label`) | Authority Label (`authority_label`) | Division Label (`division_label`) |
+|---|---|---|---|---|
+| **Campus Hostel** | Student / Resident | Wing Representative | Estate Admin | Wing |
+| **Housing Society** | Resident / Flat Owner | Floor Captain | Estate Admin | Tower |
+| **RWA Colony** | Homeowner | Block Coordinator | Estate Admin | Block |
+| **NGO Hub** | Community Member | Field Rep | Program Director | Sector |
+
+*(Chief Warden has been standardized to **Estate Admin** across the platform, code, and documentation).*
 
 ---
 
-## 📚 Documentation Reference
+## 📸 Free Image Storage Architecture (100% Free Forever)
 
-- **[WORKFLOW_AND_PROBLEM_STATEMENT.md](./WORKFLOW_AND_PROBLEM_STATEMENT.md):** Complete 0-to-100 specification, problem statement, workflow stages, schemas, and live audit.
-- **[SETUP.md](./SETUP.md):** Complete local setup, environment variables, Docker instructions, and Playwright automated testing.
-- **[ARCHITECTURE.md](./ARCHITECTURE.md):** Deep-dive system architecture, notification event pipeline, and security model.
-- **[TEACHER_ASSESSMENT_GUIDE.md](./TEACHER_ASSESSMENT_GUIDE.md):** Oral viva defense matrix, rubric alignment, and evaluation guide.
+**Question:** *Does Cloud Firestore allow free storage of images, or how are images stored so users can verify complaints with photo proof?*
+
+### The Solution: Automatic Client-Side Canvas Compression
+1. **Firestore Free Tier Limits:** Cloud Firestore provides 1GB of storage and 50,000 reads/day for $0 forever on the Spark plan. Each document has a maximum size limit of 1MB.
+2. **Camera Compression:** Raw camera photos from smartphones are 5MB-10MB, which would exceed Firestore limits if uncompressed.
+3. **Built-in HTML5 Canvas Compressor (`ImagePicker.jsx`):**
+   - When a user snaps or uploads a photo, the browser automatically resizes the image to a maximum dimension of 800px.
+   - Encodes as `image/jpeg` at 0.70 quality.
+   - The resulting base64 data string is only **25KB to 40KB**!
+   - 40KB easily fits within the 1MB Firestore document limit in the `image_url` field.
+4. **Benefits:**
+   - **$0 Cost Forever:** Stored directly inside the Firestore document on the free Spark plan.
+   - **Zero Setup / Zero Credentials:** No AWS S3 buckets, Cloudinary accounts, or credit cards required.
+   - **Instant Rendering:** Photos display instantly on cards and zoom cleanly in full modal views across desktop and mobile.
+
+---
+
+## 🛠️ Complete Free-Only Prerequisites Setup Guide
+
+Follow these exact steps to configure all free microservices:
+
+### 1. Google Firebase (Spark Plan - 100% Free)
+- **Console:** [https://console.firebase.google.com/](https://console.firebase.google.com/)
+- **Project:** `cep-ai`
+- **Authentication:**
+  1. Go to **Authentication** > **Sign-in method**.
+  2. Enable **Email/Password** provider.
+- **Firestore Database:**
+  1. Go to **Firestore Database** > **Rules**.
+  2. Paste the contents of `firestore.rules` and click **Publish**.
+- **Web App Configuration:**
+  - Copy the Firebase Web SDK credentials into `frontend/.env` (API Key, Auth Domain, Project ID).
+
+### 2. Google Gemini AI (100% Free Tier)
+- **Get Key:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+- **Tier:** 15 Requests Per Minute / 1,500 Requests Per Day for free on `gemini-1.5-flash` or `gemini-2.0-flash`.
+- **Backend Setup:** Add to `backend/.env`:
+  ```env
+  GEMINI_API_KEY=AIzaSy...your_gemini_key_here
+  ```
+
+### 3. Twilio SMS & WhatsApp (Free Trial)
+- **Sign Up:** [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio) (includes $15.50 in free trial balance).
+- **Console Values:**
+  - `TWILIO_ACCOUNT_SID`: Found on your Twilio Dashboard.
+  - `TWILIO_AUTH_TOKEN`: Found on your Twilio Dashboard.
+  - `TWILIO_PHONE_NUMBER`: Your free trial Twilio phone number.
+  - `TWILIO_WHATSAPP_NUMBER`: `+14155238886` (Twilio WhatsApp Sandbox).
+- **Backend Setup:** Add to `backend/.env`:
+  ```env
+  TWILIO_ACCOUNT_SID=AC...
+  TWILIO_AUTH_TOKEN=...
+  TWILIO_PHONE_NUMBER=+1...
+  TWILIO_WHATSAPP_NUMBER=+14155238886
+  ```
+  *(If credentials are not provided, the backend automatically runs in simulated dispatch mode with sliding-window rate limiting of 5 SMS/min).*
+
+### 4. Resend Automated Emails (100% Free Tier)
+- **Sign Up:** [https://resend.com/](https://resend.com/) (3,000 free emails per month).
+- **API Key:** Create an API Key under **API Keys**.
+- **Backend Setup:** Add to `backend/.env`:
+  ```env
+  RESEND_API_KEY=re_...
+  ```
+  *(Simulated dispatch logger operates automatically if Resend key is omitted).*
+
+---
+
+## 🚀 Local Development & Deployment
+
+### Run Locally:
+```bash
+# 1. Backend (FastAPI + Python)
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+
+# 2. Frontend (Vite + React)
+cd frontend
+npm install
+npm run dev  # Runs at http://localhost:5173
+```
+
+### Run Tests:
+```bash
+cd frontend
+npm run build
+node --test src/__tests__/firestore.test.js
+```
+
+---
+
+## 🔒 Security & Firestore Rules Summary
+- All user registration paths enforce transactional creation: Firebase Auth user creation is tied to Firestore `users/{uid}` with automatic rollback if document persistence fails.
+- Users can only read and write tickets belonging to their active community node.
+- Upvoting is rate-safe and deduplicated per UID.
+- Wing Representatives can verify and reject tickets in their assigned wing.
+- Estate Admins have authoritative dispatch rights across all wings.

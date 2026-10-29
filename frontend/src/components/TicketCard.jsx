@@ -75,8 +75,7 @@ export default function TicketCard({
   const handleAdminSubmit = (e) => {
     e.preventDefault();
     if (onAdminUpdate) {
-      onAdminUpdate,
-  onUpvote(ticket.ticket_id, {
+      onAdminUpdate(ticket.ticket_id || ticket.id, {
         status: adminStatus,
         assigned_worker: adminWorker,
         admin_notes: adminNotes
@@ -88,7 +87,7 @@ export default function TicketCard({
   const handleRepReject = (e) => {
     e.preventDefault();
     if (onRepReject) {
-      onRepReject(ticket.ticket_id, rejectReason || "Marked as duplicate or invalid complaint.");
+      onRepReject(ticket.ticket_id || ticket.id, rejectReason || "Marked as duplicate or invalid complaint.");
     }
     setShowRejectModal(false);
   };
@@ -109,7 +108,7 @@ export default function TicketCard({
         <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[11px] font-bold text-slate-400 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-800">
-              #{ticket.ticket_id}
+              #{ticket.ticket_id || ticket.id}
             </span>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-900 border border-slate-800 text-slate-200">
               {categoryIcons[ticket.category] || <Wrench className="w-3 h-3" />}
@@ -133,11 +132,11 @@ export default function TicketCard({
 
         {/* Attached Photo Preview if Present */}
         {ticket.image_url && (
-          <div className="mt-2 sm:mt-3 relative rounded-lg sm:rounded-xl overflow-hidden border border-slate-800 max-h-28 sm:max-h-36 bg-slate-950 group/img">
+          <div className="mt-2 sm:mt-3 relative rounded-lg sm:rounded-xl overflow-hidden border border-slate-800 max-h-36 sm:max-h-44 bg-slate-950 group/img">
             <img 
               src={ticket.image_url} 
               alt="Attached problem evidence" 
-              className="w-full h-32 object-cover object-center cursor-pointer group-hover/img:scale-105 transition-transform duration-300"
+              className="w-full h-36 sm:h-44 object-cover object-center cursor-pointer group-hover/img:scale-105 transition-transform duration-300"
               onClick={() => setShowImageModal(true)}
             />
             <button
@@ -192,7 +191,9 @@ export default function TicketCard({
             {ticket.verified_by && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 font-medium">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                <span className="ml-1 px-1 py-0.5 rounded bg-emerald-500/20 text-[9px] text-emerald-300 font-bold inline-flex items-center gap-0.5"><Award className="w-2.5 h-2.5" /> Wing Leader</span>
+                <span className="ml-1 px-1 py-0.5 rounded bg-emerald-500/20 text-[9px] text-emerald-300 font-bold inline-flex items-center gap-0.5">
+                  <Award className="w-2.5 h-2.5" /> {nom.verifier_label}
+                </span>
                 Verified: {ticket.verified_by}
               </span>
             )}
@@ -210,7 +211,7 @@ export default function TicketCard({
       <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
         <button
           type="button"
-          onClick={() => onUpvote && onUpvote(ticket.ticket_id)}
+          onClick={() => onUpvote && onUpvote(ticket.ticket_id || ticket.id)}
           className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-colors touch-press shrink-0"
           title="Upvote / confirm this issue affects you too"
         >
@@ -218,19 +219,20 @@ export default function TicketCard({
           <span>{ticket.upvotes || 0}</span>
           <span className="hidden sm:inline text-[10px] text-slate-400">Upvotes</span>
         </button>
+
         {/* Verifier Action Controls */}
         {currentRole === 'wing_rep' && ticket.status === 'Submitted' && (
-          <div className="flex items-center gap-2 w-full">
+          <div className="flex items-center gap-2 flex-1 justify-end">
             <button
               onClick={() => setShowRejectModal(true)}
-              className="flex-1 py-2 px-3 rounded-xl border border-rose-500/30 text-rose-300 hover:bg-rose-950/30 text-xs font-semibold flex items-center justify-center gap-1.5 touch-press transition-colors"
+              className="py-1.5 px-3 rounded-xl border border-rose-500/30 text-rose-300 hover:bg-rose-950/30 text-xs font-semibold flex items-center justify-center gap-1.5 touch-press transition-colors"
             >
               <XCircle className="w-3.5 h-3.5" />
-              <span>Reject / Spam</span>
+              <span>Reject</span>
             </button>
             <button
-              onClick={() => onRepVerify && onRepVerify(ticket.ticket_id)}
-              className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-700/20 flex items-center justify-center gap-1.5 touch-press transition-all"
+              onClick={() => onRepVerify && onRepVerify(ticket.ticket_id || ticket.id)}
+              className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-700/20 flex items-center justify-center gap-1.5 touch-press transition-all"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Verify & Escalate</span>
@@ -242,150 +244,148 @@ export default function TicketCard({
         {currentRole === 'admin' && (
           <button
             onClick={() => setShowAdminModal(true)}
-            className="w-full py-2 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-900/30 flex items-center justify-center gap-1.5 touch-press transition-all"
+            className="flex-1 py-1.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-md shadow-purple-900/30 flex items-center justify-center gap-1.5 touch-press transition-all"
           >
             <Wrench className="w-3.5 h-3.5" />
-            <span>Manage Workforce & Status</span>
+            <span>Manage Status & Crew</span>
           </button>
         )}
       </div>
 
-      {/* Admin Action Modal */}
-      {showAdminModal && (
-        <Modal 
-          isOpen={showAdminModal} 
-          onClose={() => setShowAdminModal(false)}
-          title={`Workforce Dispatch for Ticket #${ticket.ticket_id}`}
-        >
-          <form onSubmit={handleAdminSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Update Ticket Lifecycle Status
-              </label>
-              <select
-                value={adminStatus}
-                onChange={(e) => setAdminStatus(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-purple-500"
-              >
-                <option value="Verified_By_Rep">Verified (Pending Assignment)</option>
-                <option value="Assigned">Assigned to Maintenance</option>
-                <option value="In_Progress">In Progress (Repair Underway)</option>
-                <option value="Resolved">Resolved & Closed ✓</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
+      {/* Admin Status / Dispatch Modal */}
+      <Modal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        title={`Dispatch & Status Management (#${ticket.ticket_id || ticket.id})`}
+        maxWidth="max-w-lg"
+      >
+        <form onSubmit={handleAdminSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Lifecycle Status
+            </label>
+            <select
+              value={adminStatus}
+              onChange={(e) => setAdminStatus(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-purple-500"
+            >
+              <option value="Verified_By_Rep">Verified (Pending Technician)</option>
+              <option value="Assigned">Assigned to Crew</option>
+              <option value="In_Progress">In Progress / Work Underway</option>
+              <option value="Resolved">Resolved & Completed</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Assign Worker / Vendor / Technician
-              </label>
-              <input
-                type="text"
-                value={adminWorker}
-                onChange={(e) => setAdminWorker(e.target.value)}
-                placeholder="e.g. Ramesh Electricals, AquaCare Plumber #3"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-purple-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Assigned Contractor / Vendor
+            </label>
+            <input
+              type="text"
+              value={adminWorker}
+              onChange={(e) => setAdminWorker(e.target.value)}
+              placeholder="e.g. Swachh Maintenance Crew, Rajesh Electricals"
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-purple-500"
+            />
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Resolution / Administrative Remarks
-              </label>
-              <textarea
-                rows={2}
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Parts replaced, breaker inspected, issue fully resolved on site."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-purple-500"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Internal Authority Notes
+            </label>
+            <textarea
+              rows={2}
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              placeholder="Notes for resident and wing records..."
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-purple-500 resize-none"
+            />
+          </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAdminModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-900/30"
-              >
-                Save Updates
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowAdminModal(false)}
+              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-500 shadow-md shadow-purple-600/30"
+            >
+              Save & Dispatch
+            </button>
+          </div>
+        </form>
+      </Modal>
 
-      {/* Verifier Rejection Modal */}
-      {showRejectModal && (
-        <Modal 
-          isOpen={showRejectModal} 
-          onClose={() => setShowRejectModal(false)}
-          title={`Reject / Flag Ticket #${ticket.ticket_id}`}
-        >
-          <form onSubmit={handleRepReject} className="space-y-4">
-            <p className="text-xs text-slate-300">
-              Provide a reason for rejecting this complaint (e.g. duplicate issue, test submission, resolved on-site):
-            </p>
+      {/* Reject Modal */}
+      <Modal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        title={`Reject Complaint (#${ticket.ticket_id || ticket.id})`}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleRepReject} className="space-y-4">
+          <p className="text-xs text-slate-300">
+            Provide a reason for rejecting this complaint. This will filter it from the active maintenance queue.
+          </p>
+          <div>
             <textarea
               rows={3}
-              required
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="e.g. Duplicate of active ticket #8021; or physical check revealed no defect."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-rose-500"
+              placeholder="e.g. Duplicate of issue #TICK-8021, or physical inspection showed no defect."
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-rose-500 resize-none"
+              required
             />
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-900/30"
-              >
-                Confirm Rejection
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Full Size Image Preview Modal */}
-      {showImageModal && ticket.image_url && (
-        <Modal 
-          isOpen={showImageModal} 
-          onClose={() => setShowImageModal(false)}
-          title={`Photo Evidence: Ticket #${ticket.ticket_id}`}
-          maxWidth="max-w-2xl"
-        >
-          <div className="space-y-3">
-            <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center p-2">
-              <img 
-                src={ticket.image_url} 
-                alt="Enlarged problem proof" 
-                className="max-h-[70vh] w-auto object-contain rounded-lg"
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>{ticket.title}</span>
-              <button
-                onClick={() => setShowImageModal(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
-              >
-                Close Preview
-              </button>
-            </div>
           </div>
-        </Modal>
-      )}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowRejectModal(false)}
+              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500"
+            >
+              Confirm Rejection
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Full Photo Modal */}
+      <Modal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        title={`Attached Defect Evidence (#${ticket.ticket_id || ticket.id})`}
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-3">
+          <div className="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
+            <img 
+              src={ticket.image_url} 
+              alt="Defect Full View" 
+              className="w-full max-h-[70vh] object-contain mx-auto"
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>Location: {ticket.wing} • {ticket.room_number}</span>
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 text-xs font-semibold"
+            >
+              Close Photo
+            </button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   );
 }

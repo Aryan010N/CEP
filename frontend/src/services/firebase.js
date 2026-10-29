@@ -48,14 +48,26 @@ export const isFirestoreConfigured = () => {
   return Boolean(key && !key.includes("DummyKey"));
 };
 
-// Sample Image Presets for rapid testing & demos
+// Reliable backend URL helper
+export const getBackendUrl = () => {
+  const envUrl = import.meta.env.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_URL;
+  if (envUrl && !envUrl.includes('localhost')) {
+    return envUrl;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://cep-wacs.onrender.com';
+  }
+  return envUrl || 'http://localhost:8000';
+};
+
+// Sample Image Presets for rapid testing & defect demonstration
 export const SAMPLE_COMPLAINT_IMAGES = {
   electrical: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' fill='%231e293b'%3E%3Crect width='400' height='300' fill='%230f172a'/%3E%3Crect x='120' y='60' width='160' height='180' rx='12' fill='%23334155' stroke='%23475569' stroke-width='4'/%3E%3Ccircle cx='170' cy='120' r='14' fill='%230f172a'/%3E%3Ccircle cx='230' cy='120' r='14' fill='%230f172a'/%3E%3Cpath d='M150 200 L180 160 L200 180 L230 140' stroke='%23f59e0b' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M235 135 L260 115 L245 150 L270 130' stroke='%23ef4444' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Ctext x='200' y='275' font-family='sans-serif' font-size='14' font-weight='bold' fill='%2394a3b8' text-anchor='middle'%3EElectrical Hazard / Sparking Switch%3C/text%3E%3C/svg%3E",
   plumbing: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' fill='%231e293b'%3E%3Crect width='400' height='300' fill='%230f172a'/%3E%3Cpath d='M80 100 L200 100 L200 200 L320 200' stroke='%2364748b' stroke-width='24' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='200' cy='160' r='8' fill='%2338bdf8'/%3E%3Cpath d='M196 170 C190 190 210 190 204 210' stroke='%2338bdf8' stroke-width='4' fill='none'/%3E%3Cellipse cx='200' cy='240' rx='50' ry='15' fill='%230284c7' opacity='0.4'/%3E%3Ctext x='200' y='275' font-family='sans-serif' font-size='14' font-weight='bold' fill='%2394a3b8' text-anchor='middle'%3EWater Pipe Leakage%3C/text%3E%3C/svg%3E",
   sanitation: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' fill='%231e293b'%3E%3Crect width='400' height='300' fill='%230f172a'/%3E%3Cpath d='M140 100 L150 230 L250 230 L260 100 Z' fill='%2315803d' stroke='%23166534' stroke-width='4'/%3E%3Crect x='130' y='80' width='140' height='20' rx='4' fill='%23166534'/%3E%3Ccircle cx='180' cy='65' r='10' fill='%23ca8a04' opacity='0.7'/%3E%3Ccircle cx='220' cy='55' r='12' fill='%23ca8a04' opacity='0.8'/%3E%3Ctext x='200' y='275' font-family='sans-serif' font-size='14' font-weight='bold' fill='%2394a3b8' text-anchor='middle'%3EOverflowing Waste Bin%3C/text%3E%3C/svg%3E"
 };
 
-// Initial Pre-Seeded Communities with Reconciled "Estate Admin" Nomenclature
+// Pre-Configured Baseline Communities with Dynamic Nomenclature
 export const INITIAL_DEMO_COMMUNITIES = [
   {
     community_id: "comm_emerald_1",
@@ -63,7 +75,7 @@ export const INITIAL_DEMO_COMMUNITIES = [
     type: "hostel",
     city: "Bengaluru",
     wings: ["Wing A", "Wing B", "Wing C", "Wing D"],
-    admin_uid: "usr_admin_1",
+    admin_uid: "R1htdZe8E1ThIpfFHiHO63bnEx72",
     nomenclature: {
       reporter_label: "Student / Resident",
       verifier_label: "Wing Representative",
@@ -104,60 +116,6 @@ export const INITIAL_DEMO_COMMUNITIES = [
   }
 ];
 
-// Initial Demonstration Users
-export const INITIAL_DEMO_USERS = [
-  {
-    uid: "usr_resident_1",
-    email: "resident@campus.edu",
-    name: "Aarav Sharma",
-    role: "resident",
-    community_id: "comm_emerald_1",
-    wing: "Wing A",
-    room_number: "A-304",
-    phone: "+91 98765 43210"
-  },
-  {
-    uid: "usr_resident_2",
-    email: "priya@palmgrove.org",
-    name: "Priya Nair",
-    role: "resident",
-    community_id: "comm_palmgrove_2",
-    wing: "Tower 1 (Gulmohar)",
-    room_number: "Flat 402",
-    phone: "+91 98765 43211"
-  },
-  {
-    uid: "usr_wingrep_1",
-    email: "wingrep.a@campus.edu",
-    name: "Vikram Malhotra",
-    role: "wing_rep",
-    community_id: "comm_emerald_1",
-    wing: "Wing A",
-    room_number: "A-101",
-    phone: "+91 98765 11111"
-  },
-  {
-    uid: "usr_admin_1",
-    email: "admin@campus.edu",
-    name: "Dr. Rajesh Iyer",
-    role: "admin",
-    community_id: "comm_emerald_1",
-    wing: "Admin Block",
-    room_number: "HQ-01",
-    phone: "+91 98765 99999"
-  },
-  {
-    uid: "usr_ngo_1",
-    email: "reachout@ngo.org",
-    name: "Anita Deshmukh",
-    role: "ngo",
-    community_id: "comm_emerald_1",
-    wing: "Partner NGO",
-    room_number: "NGO-Desk",
-    phone: "+91 98765 77777"
-  }
-];
-
 export const INITIAL_DEMO_TICKETS = [
   {
     ticket_id: "TICK-8021",
@@ -166,14 +124,14 @@ export const INITIAL_DEMO_TICKETS = [
     category: "Electrical",
     urgency: "High",
     status: "Submitted",
-    resident_id: "usr_resident_1",
-    resident_name: "Aarav Sharma",
+    resident_id: "1CQhM7DORNOAtMynLCFbtSti5rl2",
+    resident_name: "Aarav Resident",
     community_id: "comm_emerald_1",
     wing: "Wing A",
     room_number: "A-304",
     image_url: SAMPLE_COMPLAINT_IMAGES.electrical,
     upvotes: 4,
-    upvoted_by: ["usr_resident_2", "usr_wingrep_1"],
+    upvoted_by: ["1CQhM7DORNOAtMynLCFbtSti5rl2", "xRvnXdGIsmQfpYcXgdqdyHv0KKj2"],
     created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     verified_by: null,
     assigned_worker: null,
@@ -187,40 +145,19 @@ export const INITIAL_DEMO_TICKETS = [
     category: "Plumbing",
     urgency: "High",
     status: "Verified_By_Rep",
-    resident_id: "usr_resident_1",
-    resident_name: "Aarav Sharma",
+    resident_id: "1CQhM7DORNOAtMynLCFbtSti5rl2",
+    resident_name: "Aarav Resident",
     community_id: "comm_emerald_1",
     wing: "Wing A",
     room_number: "A-210",
     image_url: SAMPLE_COMPLAINT_IMAGES.plumbing,
     upvotes: 7,
-    upvoted_by: ["usr_resident_1", "usr_resident_2"],
+    upvoted_by: ["1CQhM7DORNOAtMynLCFbtSti5rl2"],
     created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    verified_by: "Vikram Malhotra (Wing Rep)",
+    verified_by: "Vikram Rep (Wing Representative)",
     assigned_worker: null,
     ai_summary: "Plumbing issue: Severe common washroom drain blockage causing hallway water leakage.",
     suggested_action: "Dispatch plumbing crew with mechanical snake tool and floor disinfection."
-  },
-  {
-    ticket_id: "TICK-7994",
-    title: "Garbage bin overflowing near Tower 1 staircase",
-    description: "Waste collection bin has not been emptied for 2 days, attracting pests and foul smell.",
-    category: "Sanitation",
-    urgency: "Medium",
-    status: "In_Progress",
-    resident_id: "usr_resident_2",
-    resident_name: "Priya Nair",
-    community_id: "comm_palmgrove_2",
-    wing: "Tower 1 (Gulmohar)",
-    room_number: "Flat 402",
-    image_url: SAMPLE_COMPLAINT_IMAGES.sanitation,
-    upvotes: 2,
-    upvoted_by: ["usr_resident_2"],
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    verified_by: "Floor Captain Rakesh",
-    assigned_worker: "Swachh Cleaning Crew #4",
-    ai_summary: "Sanitation issue: Waste bin backlog causing hygiene hazard near Tower 1 stairs.",
-    suggested_action: "Sanitation clearance and antiseptic spraying."
   }
 ];
 
@@ -245,8 +182,8 @@ export const INITIAL_DEMO_CHALLENGES = [
     description: "Build a PWA that works without internet after initial sync, allowing rural community learning centers to track kids' math practice.",
     skills_required: ["IndexedDB", "React / PWA", "Gamification"],
     status: "Claimed",
-    claimed_by_user_id: "usr_resident_1",
-    claimed_by_user_name: "Aarav Sharma (Student)",
+    claimed_by_user_id: "1CQhM7DORNOAtMynLCFbtSti5rl2",
+    claimed_by_user_name: "Aarav Resident (Student)",
     contact_email: "tech@vidyajyoti.org",
     reward: "Letter of Recommendation + 350 CEP Credits",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
@@ -266,22 +203,18 @@ export const INITIAL_DEMO_CHALLENGES = [
   }
 ];
 
-// Helper to resolve collection names with isolated demo prefix
-const getCol = (name, isDemo = false) => isDemo ? `demo_${name}` : name;
-
 // ============================================================================
-// CLOUD FIRESTORE MODULAR v10+ SERVICES
+// REAL-TIME CLOUD FIRESTORE MODULAR v10+ SERVICES (PRODUCTION ONLY)
 // ============================================================================
 
-export const subscribeTickets = (communityId, onUpdate, onError, isDemo = false) => {
+export const subscribeTickets = (communityId, onUpdate, onError) => {
   if (!db || !communityId) {
     return () => {};
   }
 
   try {
-    const colName = getCol('tickets', isDemo);
     const q = query(
-      collection(db, colName),
+      collection(db, 'tickets'),
       where('community_id', '==', communityId)
     );
 
@@ -290,6 +223,7 @@ export const subscribeTickets = (communityId, onUpdate, onError, isDemo = false)
       (snapshot) => {
         const ticketList = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
+          ticket_id: docSnap.id,
           ...docSnap.data(),
           created_at: docSnap.data().server_created_at?.toDate
             ? docSnap.data().server_created_at.toDate().toISOString()
@@ -300,7 +234,7 @@ export const subscribeTickets = (communityId, onUpdate, onError, isDemo = false)
         onUpdate(ticketList);
       },
       (error) => {
-        console.warn(`Firestore ${colName} subscription warning/fallback:`, error);
+        console.warn('Firestore tickets subscription notice:', error);
         if (onError) onError(error);
       }
     );
@@ -313,12 +247,11 @@ export const subscribeTickets = (communityId, onUpdate, onError, isDemo = false)
   }
 };
 
-export const subscribeCommunities = (onUpdate, onError, isDemo = false) => {
+export const subscribeCommunities = (onUpdate, onError) => {
   if (!db) return () => {};
 
   try {
-    const colName = getCol('communities', isDemo);
-    const q = collection(db, colName);
+    const q = collection(db, 'communities');
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -332,7 +265,7 @@ export const subscribeCommunities = (onUpdate, onError, isDemo = false) => {
         }
       },
       (error) => {
-        console.warn(`Firestore ${colName} subscription warning:`, error);
+        console.warn('Firestore communities subscription notice:', error);
         if (onError) onError(error);
       }
     );
@@ -345,12 +278,11 @@ export const subscribeCommunities = (onUpdate, onError, isDemo = false) => {
   }
 };
 
-export const subscribeChallenges = (onUpdate, onError, isDemo = false) => {
+export const subscribeChallenges = (onUpdate, onError) => {
   if (!db) return () => {};
 
   try {
-    const colName = getCol('challenges', isDemo);
-    const q = collection(db, colName);
+    const q = collection(db, 'challenges');
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -364,7 +296,7 @@ export const subscribeChallenges = (onUpdate, onError, isDemo = false) => {
         }
       },
       (error) => {
-        console.warn(`Firestore ${colName} subscription warning:`, error);
+        console.warn('Firestore challenges subscription notice:', error);
         if (onError) onError(error);
       }
     );
@@ -381,15 +313,18 @@ export const subscribeChallenges = (onUpdate, onError, isDemo = false) => {
  * Persist a new ticket into Cloud Firestore using modular v10+ setDoc with serverTimestamp.
  * Enforces a strict blocking AI deduplication gate against active community tickets.
  */
-export const createTicketInFirestore = async (ticket, existingComplaints = [], isDemo = false) => {
+export const createTicketInFirestore = async (ticket, existingComplaints = []) => {
   if (!db) return ticket;
 
-  const backendUrl = import.meta.env.VITE_BACKEND_API_URL || import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = getBackendUrl();
   try {
     const formattedExisting = (existingComplaints || []).map(t => ({
       ticket_id: t.ticket_id || t.id || 'TICK-PREV',
       text: `${t.title || ''}. ${t.description || ''}`
     }));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     const dedupResponse = await fetch(`${backendUrl}/api/tickets/deduplicate`, {
       method: 'POST',
@@ -397,8 +332,10 @@ export const createTicketInFirestore = async (ticket, existingComplaints = [], i
       body: JSON.stringify({ 
         new_complaint: `${ticket.title}. ${ticket.description}`,
         existing_complaints: formattedExisting
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     
     if (dedupResponse.ok) {
       const dedupResult = await dedupResponse.json();
@@ -408,13 +345,12 @@ export const createTicketInFirestore = async (ticket, existingComplaints = [], i
     }
   } catch (error) {
     if (error instanceof DuplicateTicketError) {
-      throw error; // Re-throw to be caught and displayed by the UI
+      throw error;
     }
-    console.warn("Deduplication check encountered network/fallback:", error);
+    console.warn("Deduplication check passed with client fallback:", error?.message);
   }
 
-  const colName = getCol('tickets', isDemo);
-  const docRef = doc(db, colName, ticket.ticket_id);
+  const docRef = doc(db, 'tickets', ticket.ticket_id);
   await setDoc(docRef, {
     ...ticket,
     isDuplicate: false,
@@ -426,20 +362,18 @@ export const createTicketInFirestore = async (ticket, existingComplaints = [], i
   return ticket;
 };
 
-export const updateTicketInFirestore = async (ticketId, updateData, isDemo = false) => {
+export const updateTicketInFirestore = async (ticketId, updateData) => {
   if (!db) return;
-  const colName = getCol('tickets', isDemo);
-  const docRef = doc(db, colName, ticketId);
+  const docRef = doc(db, 'tickets', ticketId);
   await updateDoc(docRef, {
     ...updateData,
     server_updated_at: serverTimestamp()
   });
 };
 
-export const upvoteTicketInFirestore = async (ticketId, userId, isDemo = false) => {
+export const upvoteTicketInFirestore = async (ticketId, userId) => {
   if (!db || !ticketId) return;
-  const colName = getCol('tickets', isDemo);
-  const docRef = doc(db, colName, ticketId);
+  const docRef = doc(db, 'tickets', ticketId);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     const data = docSnap.data();
@@ -454,10 +388,9 @@ export const upvoteTicketInFirestore = async (ticketId, userId, isDemo = false) 
   }
 };
 
-export const createCommunityInFirestore = async (community, isDemo = false) => {
+export const createCommunityInFirestore = async (community) => {
   if (!db) return community;
-  const colName = getCol('communities', isDemo);
-  const docRef = doc(db, colName, community.community_id);
+  const docRef = doc(db, 'communities', community.community_id);
   await setDoc(docRef, {
     ...community,
     server_created_at: serverTimestamp()
@@ -465,10 +398,9 @@ export const createCommunityInFirestore = async (community, isDemo = false) => {
   return community;
 };
 
-export const joinCommunityInFirestore = async (communityId, member, isDemo = false) => {
+export const joinCommunityInFirestore = async (communityId, member) => {
   if (!db) return;
-  const colName = getCol('communities', isDemo);
-  const docRef = doc(db, colName, communityId);
+  const docRef = doc(db, 'communities', communityId);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     const currentMembers = docSnap.data().members || [];
@@ -479,10 +411,9 @@ export const joinCommunityInFirestore = async (communityId, member, isDemo = fal
   }
 };
 
-export const claimChallengeInFirestore = async (challengeId, studentUserId, studentName, isDemo = false) => {
+export const claimChallengeInFirestore = async (challengeId, studentUserId, studentName) => {
   if (!db) return;
-  const colName = getCol('challenges', isDemo);
-  const docRef = doc(db, colName, challengeId);
+  const docRef = doc(db, 'challenges', challengeId);
   await updateDoc(docRef, {
     status: 'Claimed',
     claimed_by_user_id: studentUserId,
@@ -492,39 +423,12 @@ export const claimChallengeInFirestore = async (challengeId, studentUserId, stud
   });
 };
 
-export const postChallengeInFirestore = async (challenge, isDemo = false) => {
+export const postChallengeInFirestore = async (challenge) => {
   if (!db) return challenge;
-  const colName = getCol('challenges', isDemo);
-  const docRef = doc(db, colName, challenge.challenge_id);
+  const docRef = doc(db, 'challenges', challenge.challenge_id);
   await setDoc(docRef, {
     ...challenge,
     server_created_at: serverTimestamp()
   });
   return challenge;
-};
-
-export const seedDemoDataToFirestore = async () => {
-  if (!db) return;
-  try {
-    for (const comm of INITIAL_DEMO_COMMUNITIES) {
-      await setDoc(doc(db, 'demo_communities', comm.community_id), {
-        ...comm,
-        server_created_at: serverTimestamp()
-      }, { merge: true });
-    }
-    for (const tkt of INITIAL_DEMO_TICKETS) {
-      await setDoc(doc(db, 'demo_tickets', tkt.ticket_id), {
-        ...tkt,
-        server_created_at: serverTimestamp()
-      }, { merge: true });
-    }
-    for (const ch of INITIAL_DEMO_CHALLENGES) {
-      await setDoc(doc(db, 'demo_challenges', ch.challenge_id), {
-        ...ch,
-        server_created_at: serverTimestamp()
-      }, { merge: true });
-    }
-  } catch (err) {
-    console.warn('Seeding demo data to Firestore skipped or encountered rule restriction:', err);
-  }
 };

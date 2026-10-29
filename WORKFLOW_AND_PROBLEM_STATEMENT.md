@@ -2,7 +2,6 @@
 ## Comprehensive Problem Statement, System Architecture & End-to-End Workflow Specification (From 0 to Complete)
 
 [![Live Production](https://img.shields.io/badge/Production%20App-https%3A%2F%2Fcep--seven.vercel.app%2F-indigo?style=for-the-badge&logo=vercel)](https://cep-seven.vercel.app/)
-[![Live Demo Environment](https://img.shields.io/badge/Demo%20Environment-https%3A%2F%2Fcep--seven.vercel.app%2Fdemo-amber?style=for-the-badge&logo=google-chrome)](https://cep-seven.vercel.app/demo)
 [![Firebase Project](https://img.shields.io/badge/Firebase%20Console-cep--ai-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/u/0/project/cep-ai/overview)
 [![Backend API](https://img.shields.io/badge/Backend%20API-FastAPI%20Render-emerald?style=for-the-badge&logo=fastapi)](https://cep-wacs.onrender.com)
 
@@ -24,7 +23,7 @@ The **AI Community Digital Problem Observatory** transforms civic management int
 - **Three-Tier Human Escalation Pipeline:** Standardizes authority roles (`Resident` $\rightarrow$ `Wing Representative` $\rightarrow$ `Estate Admin`), ensuring every issue is verified locally before administrative dispatch.
 - **Sub-30s SMS & Email Notification Alerts:** Automated alerts to authorities upon verification and status change notifications to residents.
 - **NGO Challenge Marketplace & CEP Credit Gamification:** Connects grassroots NGOs with students through real-world social impact tasks rewarded with CEP credits, honor badges, and leaderboards.
-- **Guaranteed Production & Demo Isolation:** Real data is preserved in separate Firestore collections while evaluators and guests can explore seeded roles at `/demo`.
+- **Unified Real Data Pipeline:** Real-time synchronization across all roles via Cloud Firestore with dedicated login credentials for all personas (`aarav@cep.demo`, `vikram@cep.demo`, `rajesh@cep.demo`, `anita@cep.demo` / `Password123!`).
 
 ---
 
@@ -147,21 +146,22 @@ sequenceDiagram
 
 ---
 
-## 4. Production vs. Demo Separation Architecture
+## 4. Standard Pre-Configured Test Accounts & Routing Architecture
 
-To allow university professors, evaluators, and recruiters to test the application without polluting live community data, the codebase strictly isolates production from demo environments:
+The platform operates as a unified, real-time application with zero mock datastores. Logging in with an account directly directs that user to their respective role dashboard:
 
-| Attribute | Production Environment | Demonstration Environment |
-|---|---|---|
-| **URL Route** | `https://cep-seven.vercel.app/` (or `/app`) | `https://cep-seven.vercel.app/demo` |
-| **Firestore Database Collections** | `users`, `tickets`, `communities`, `challenges` | `demo_users`, `demo_tickets`, `demo_communities`, `demo_challenges` |
-| **Authentication Barrier** | Real user registration via Firebase Auth | Pre-seeded 1-Click Persona switcher + Demo logins |
-| **Data Immutability** | Real resident reports and maintenance records | Isolated sandbox data; changes do not affect production |
-| **UI Persona Switcher** | Hidden | Prominently displayed top evaluation banner |
+| Attribute | Resident | Wing Representative | Estate Admin | NGO Partner |
+|---|---|---|---|---|
+| **Email Address** | `aarav@cep.demo` | `vikram@cep.demo` | `rajesh@cep.demo` | `anita@cep.demo` |
+| **Password** | `Password123!` | `Password123!` | `Password123!` | `Password123!` |
+| **Direct Route** | `/dashboard` | `/rep` | `/admin` | `/challenges` |
+| **Firestore Data** | `tickets` (submitted/my unit) | `tickets` (assigned wing queue) | `tickets` (cross-wing dispatch) | `challenges` (active marketplace) |
 
 ```
-Production Client ───> /tickets, /users, /communities ───> [Real Community Data]
-Demo Client (/demo) ──> /demo_tickets, /demo_users ───────> [Isolated Sandbox Data]
+Resident (aarav@cep.demo)    ───> /dashboard  ───> [Real Firestore tickets]
+Wing Rep (vikram@cep.demo)   ───> /rep        ───> [Real Firestore tickets]
+Estate Admin (rajesh@cep.demo) ─> /admin      ───> [Real Firestore tickets]
+NGO Partner (anita@cep.demo) ───> /challenges ───> [Real Firestore challenges]
 ```
 
 ---
@@ -269,7 +269,6 @@ The application provides distinct, bookmarkable routes backed by `vercel.json` S
 | **`/challenges`** (or `/ngo`) | NGO Community Challenges Marketplace | Authenticated Members & Students |
 | **`/scoreboard`** | CEP Credit Gamification Honor Roll & Leaderboard | Authenticated Members |
 | **`/feed`** | Public Problem Register for Active Community | Authenticated Members |
-| **`/demo`** | Isolated 1-Click Evaluation Sandbox | Evaluators / Guests (`demo_*` collections) |
 
 ### 6.2 Notifications, Rate Limiting & Verification Architecture
 
@@ -380,5 +379,5 @@ cd ../frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:5173` for the Production app or `http://localhost:5173/demo` for the Demo sandbox.
+Open `http://localhost:5173` to access the Observatory. Log in with `aarav@cep.demo` / `Password123!` to test.
 
